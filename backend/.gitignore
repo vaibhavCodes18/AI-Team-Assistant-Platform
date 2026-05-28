@@ -1,0 +1,84 @@
+### ===== Build Output ===== ###
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### ===== Maven Wrapper ===== ###
+.mvn/wrapper/maven-wrapper.jar
+
+### ===== Application Logs (logback → ./logs/) ===== ###
+logs/
+*.log
+
+### ===== Sensitive Spring Profiles (contain credentials) ===== ###
+src/main/resources/application-dev.yaml
+
+### ===== Environment & Secrets ===== ###
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+
+### ===== OS Generated ===== ###
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.swp
+*~
+
+### ===== IntelliJ IDEA ===== ###
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+### ===== Eclipse / STS ===== ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+bin/
+
+### ===== NetBeans ===== ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### ===== VS Code ===== ###
+.vscode/
+
+### ===== Spring Boot ===== ###
+HELP.md
+
+### ===== Docker ===== ###
+docker-compose.override.yml
+
+### ===== Database ===== ###
+*.sql.bak
+
+### ===== Redis ===== ###
+dump.rdb
+
+### ===== Kafka ===== ###
+kafka-logs/
+
+### ===== Java / JVM ===== ###
+hs_err_pid*
+replay_pid*
+*.class
+*.jar
+!**/src/**/lib/*.jar
