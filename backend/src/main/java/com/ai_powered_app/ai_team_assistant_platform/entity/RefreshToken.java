@@ -1,12 +1,8 @@
 package com.ai_powered_app.ai_team_assistant_platform.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "refresh_tokens")
@@ -22,7 +18,5 @@ public class RefreshToken extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String token;
 
-    private LocalDateTime expiresAt;
-
-    private Boolean revoked = false;
+    private Boolean isRevoked = false;
 }

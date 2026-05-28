@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,13 +16,9 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
 
     List<RefreshToken> findByUserId(Long userId);
 
-    List<RefreshToken> findByUserIdAndRevoked(Long userId, Boolean revoked);
+    List<RefreshToken> findByUserIdAndIsRevoked(Long userId, Boolean isRevoked);
 
     @Modifying
-    @Query("UPDATE RefreshToken rt SET rt.revoked = true WHERE rt.user.id = :userId")
+    @Query("UPDATE RefreshToken rt SET rt.isRevoked = true WHERE rt.user.id = :userId")
     void revokeAllByUserId(Long userId);
-
-    @Modifying
-    @Query("DELETE FROM RefreshToken rt WHERE rt.expiresAt < :now")
-    void deleteAllExpiredTokens(LocalDateTime now);
 }
