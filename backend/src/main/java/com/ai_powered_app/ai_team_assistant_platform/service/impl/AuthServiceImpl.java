@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -140,6 +141,28 @@ public class AuthServiceImpl implements AuthService {
         RefreshToken dbRefreshToken = refreshTokenRepository.findByToken(refreshToken).orElseThrow(() -> new ResourceNotFoundException("Refresh token is invalid"));
         dbRefreshToken.setIsRevoked(true);
         refreshTokenRepository.save(dbRefreshToken);
+    }
+
+    @Override
+    public UserResponse getCurrentUser() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        String userEmail = authentication.getName();
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with this id."));
+
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .provider(user.getProvider())
+                .profileImage(user.getProfileImage())
+                .isActive(user.getIsActive())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
     }
 
     private static UserResponse getUserResponse(User savedUser) {

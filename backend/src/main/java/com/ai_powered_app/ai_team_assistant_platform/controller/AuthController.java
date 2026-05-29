@@ -80,6 +80,14 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(res);
     }
 
+    @GetMapping("/profile")
+    public ResponseEntity<ApiResponse<UserResponse>> profile(){
+        UserResponse userResponse = authService.getCurrentUser();
+        ApiResponse<UserResponse> res = new ApiResponse<>(200, "User successfully fetched", userResponse);
+
+        return ResponseEntity.status(HttpStatus.OK).body(res);
+    }
+
     private void addRefreshCookie(HttpServletResponse response, String tokenValue, int maxAge) {
         ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE_NAME, tokenValue)
                 .httpOnly(true)
