@@ -2,6 +2,7 @@ package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.LoginRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.UserRegistrationRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TokenResfreshResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserLoginResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.RefreshToken;
@@ -62,10 +63,13 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public UserLoginResponse userLogin(LoginRequest loginRequest) {
         User user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow(() -> new ResourceNotFoundException("Users with this email is invalid."));
+
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+
         if (!authentication.isAuthenticated()) {
             throw new BadCredentialsException("Users credentials are invalid.");
         }
+
         refreshTokenRepository.revokeAllByUserId(user.getId());
         String accessToken = jwtService.generateAccessToken(user.getId(), user.getEmail());
         String refreshTokenString = jwtService.generateRefreshToken(user.getEmail());
@@ -74,6 +78,57 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenRepository.save(refreshToken);
 
         return new UserLoginResponse(accessToken, refreshTokenString);
+    }
+
+    @Override
+    public TokenResfreshResponse refreshToken(String refreshToken) {
+
+        try {
+            RefreshToken dbRefreshToken = refreshTokenRepository.findByToken(refreshToken).orElseThrow(() -> new
+                    ResourceNotFoundException("Refresh token is invalid"));
+
+            if(dbRefreshToken.getIsRevoked()){
+                throw new BadCredentialsException("Refresh token is revoked");
+            }
+
+            String email = jwtService.extractEmail(refreshToken);
+
+            if(email != null){
+                User user = userRepository.findByEmail(email).orElseThrow(() ->
+                        new ResourceNotFoundException("User with email: " + email + " not found"));
+
+                if(!dbRefreshToken.getUser().getId().equals(user.getId())){
+                    dbRefreshToken.setIsRevoked(true);
+                    refreshTokenRepository.save(dbRefreshToken);
+                    throw new BadCredentialsException("Refresh token is invalid");
+                }
+
+                if (jwtService.isRefreshTokenValid(refreshToken, user.getEmail())){
+                    String newAccessToken = jwtService.generateAccessToken(user.getId(), user.getEmail());
+                    String newRefreshToken = jwtService.generateRefreshToken(user.getEmail());
+
+                    dbRefreshToken.setIsRevoked(true);
+                    refreshTokenRepository.save(dbRefreshToken);
+
+                    RefreshToken newTokens = new RefreshToken();
+                    newTokens.setToken(newRefreshToken);
+                    newTokens.setUser(user);
+                    newTokens.setIsRevoked(false);
+                    refreshTokenRepository.save(newTokens);
+
+                    return new TokenResfreshResponse(newAccessToken, newRefreshToken);
+
+                }else{
+                    dbRefreshToken.setIsRevoked(true);
+                    refreshTokenRepository.save(dbRefreshToken);
+                }
+
+            }
+        } catch (Exception e) {
+            throw new BadCredentialsException("Invalid or expired refresh token: " + e.getMessage());
+        }
+
+        throw new BadCredentialsException("Invalid refresh token");
     }
 
     private static UserResponse getUserResponse(User savedUser) {

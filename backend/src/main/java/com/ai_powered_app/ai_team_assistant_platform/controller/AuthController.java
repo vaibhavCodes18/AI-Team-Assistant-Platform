@@ -2,6 +2,7 @@ package com.ai_powered_app.ai_team_assistant_platform.controller;
 
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.LoginRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.UserRegistrationRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TokenResfreshResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserLoginResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
@@ -14,10 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -48,6 +46,21 @@ public class AuthController {
         ApiResponse<UserLoginResponse> res = new ApiResponse<>(200, "User successfully loggedIn", userResponse);
         // Set HttpOnly refresh token cookie
         addRefreshCookie(response, userResponse.getRefreshToken(), REFRESH_COOKIE_MAX_AGE);
+        return ResponseEntity.status(HttpStatus.OK).body(res);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<TokenResfreshResponse>> login(@CookieValue(value = REFRESH_COOKIE_NAME, required = false) String refreshToken,
+                                                                    HttpServletResponse response){
+        if (refreshToken == null || refreshToken.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>(400, "Refresh Token is missing in cookies", null));
+        }
+        TokenResfreshResponse userResponse = authService.refreshToken(refreshToken);
+
+        addRefreshCookie(response, userResponse.getRefreshtoken(), REFRESH_COOKIE_MAX_AGE);
+        ApiResponse<TokenResfreshResponse> res = new ApiResponse<>(201, "User successfully loggedIn", userResponse);
+
         return ResponseEntity.status(HttpStatus.OK).body(res);
     }
 
