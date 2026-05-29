@@ -64,6 +64,22 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(res);
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<?>> logoout(@CookieValue(value = REFRESH_COOKIE_NAME, required = false) String refreshToken,
+                                                                    HttpServletResponse response){
+        if (refreshToken == null || refreshToken.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>(400, "Refresh Token is missing in cookies", null));
+        }
+
+        authService.userLogout(refreshToken);
+
+        addRefreshCookie(response, "", 0);
+        ApiResponse<TokenResfreshResponse> res = new ApiResponse<>(200, "User successfully Logout", null);
+
+        return ResponseEntity.status(HttpStatus.OK).body(res);
+    }
+
     private void addRefreshCookie(HttpServletResponse response, String tokenValue, int maxAge) {
         ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE_NAME, tokenValue)
                 .httpOnly(true)

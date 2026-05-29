@@ -131,6 +131,17 @@ public class AuthServiceImpl implements AuthService {
         throw new BadCredentialsException("Invalid refresh token");
     }
 
+    @Override
+    public void userLogout(String refreshToken) {
+        if(refreshToken.trim().isEmpty()){
+            throw new BadCredentialsException("Refresh token is required for logout");
+        }
+
+        RefreshToken dbRefreshToken = refreshTokenRepository.findByToken(refreshToken).orElseThrow(() -> new ResourceNotFoundException("Refresh token is invalid"));
+        dbRefreshToken.setIsRevoked(true);
+        refreshTokenRepository.save(dbRefreshToken);
+    }
+
     private static UserResponse getUserResponse(User savedUser) {
         UserResponse userResponse = new UserResponse();
         userResponse.setId(savedUser.getId());
