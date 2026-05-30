@@ -17,7 +17,6 @@ public class WorkspaceMemberResponse {
     private Long workspaceId;
     private UserResponse user;
     private WorkspaceRole role;
-    private String designation;
     private UserResponse invitedBy;
     private LocalDateTime joinedAt;
     private LocalDateTime createdAt;

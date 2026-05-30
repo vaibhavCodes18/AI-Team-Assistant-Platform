@@ -2,7 +2,11 @@ package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceUpdateRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceMemberRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceRoleUpdateRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceMemberResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.User;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Workspace;
 import com.ai_powered_app.ai_team_assistant_platform.entity.WorkspaceMember;
@@ -18,6 +22,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class WorkspaceServiceImpl implements WorkspaceService {
@@ -123,5 +129,138 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     private User getAuthenticateUser(){
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
+    }
+
+    @Override
+    public void deleteWorkspace(Long workspaceId) {
+        User user = getAuthenticateUser();
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
+                
+        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, user.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+                
+        if (member.getRole() != WorkspaceRole.OWNER) {
+            throw new BadCredentialsException("Only the OWNER can delete the workspace");
+        }
+        
+        List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspaceId);
+        workspaceMemberRepository.deleteAll(members);
+        
+        workspaceRepository.delete(workspace);
+    }
+    
+    @Override
+    public WorkspaceMemberResponse inviteMember(Long workspaceId, WorkspaceMemberRequest request) {
+        User currentUser = getAuthenticateUser();
+        
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
+                
+        WorkspaceMember currentMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+                
+        if (currentMember.getRole() != WorkspaceRole.OWNER && currentMember.getRole() != WorkspaceRole.ADMIN) {
+            throw new BadCredentialsException("Only OWNER or ADMIN can invite members");
+        }
+        
+        User userToInvite = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                
+        if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, request.getUserId())) {
+            throw new IllegalArgumentException("User is already a member of this workspace");
+        }
+        
+        WorkspaceMember newMember = new WorkspaceMember();
+        newMember.setWorkspace(workspace);
+        newMember.setUser(userToInvite);
+        newMember.setRole(request.getRole());
+        newMember.setInvitedBy(currentUser);
+        newMember.setJoinedAt(LocalDateTime.now());
+        
+        WorkspaceMember savedMember = workspaceMemberRepository.save(newMember);
+        return getWorkspaceMemberResponse(savedMember);
+    }
+    
+    @Override
+    public void removeMember(Long workspaceId, Long userId) {
+        User currentUser = getAuthenticateUser();
+        
+        WorkspaceMember currentMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+                
+        if (currentMember.getRole() != WorkspaceRole.OWNER && currentMember.getRole() != WorkspaceRole.ADMIN) {
+            throw new BadCredentialsException("Only OWNER or ADMIN can remove members");
+        }
+        
+        WorkspaceMember memberToRemove = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found in workspace"));
+                
+        if (memberToRemove.getRole() == WorkspaceRole.OWNER && currentMember.getRole() != WorkspaceRole.OWNER) {
+            throw new BadCredentialsException("ADMIN cannot remove an OWNER");
+        }
+        
+        workspaceMemberRepository.delete(memberToRemove);
+    }
+    
+    @Override
+    public WorkspaceMemberResponse updateMemberRole(Long workspaceId, Long userId, WorkspaceRoleUpdateRequest request) {
+        User currentUser = getAuthenticateUser();
+        
+        WorkspaceMember currentMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+                
+        if (currentMember.getRole() != WorkspaceRole.OWNER) {
+            throw new BadCredentialsException("Only OWNER can update member roles");
+        }
+        
+        WorkspaceMember memberToUpdate = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found in workspace"));
+                
+        memberToUpdate.setRole(request.getRole());
+        WorkspaceMember updatedMember = workspaceMemberRepository.save(memberToUpdate);
+        
+        return getWorkspaceMemberResponse(updatedMember);
+    }
+    
+    @Override
+    public List<WorkspaceMemberResponse> getWorkspaceMembers(Long workspaceId) {
+        User currentUser = getAuthenticateUser();
+        
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, currentUser.getId())) {
+            throw new BadCredentialsException("You are not a member of this workspace");
+        }
+        
+        List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspaceId);
+        return members.stream().map(this::getWorkspaceMemberResponse).collect(Collectors.toList());
+    }
+
+    private UserResponse getUserResponse(User user) {
+        if (user == null) return null;
+        return UserResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .provider(user.getProvider())
+                .profileImage(user.getProfileImage())
+                .designation(user.getDesignation())
+                .isActive(user.getIsActive())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
+    }
+    
+    private WorkspaceMemberResponse getWorkspaceMemberResponse(WorkspaceMember member) {
+        if (member == null) return null;
+        return WorkspaceMemberResponse.builder()
+                .id(member.getId())
+                .workspaceId(member.getWorkspace().getId())
+                .user(getUserResponse(member.getUser()))
+                .role(member.getRole())
+                .invitedBy(getUserResponse(member.getInvitedBy()))
+                .joinedAt(member.getJoinedAt())
+                .createdAt(member.getCreatedAt())
+                .updatedAt(member.getUpdatedAt())
+                .build();
     }
 }
