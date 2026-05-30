@@ -18,6 +18,7 @@ public class UserResponse {
     private String email;
     private AuthProvider provider;
     private String profileImage;
+    private String designation;
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -32,7 +32,7 @@ public class WorkspaceMember extends BaseEntity{
     @Enumerated(EnumType.STRING)
     private WorkspaceRole role;
 
-    private String designation;
+    
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invited_by")

@@ -1,5 +1,6 @@
 package com.ai_powered_app.ai_team_assistant_platform.dto.request;
 
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -23,9 +24,10 @@ public class WorkspaceRequest {
     @Size(max = 100, message = "Workspace slug must not exceed 100 characters")
     private String slug;
 
+    @Nullable
     @Size(max = 255, message = "Description must not exceed 255 characters")
     private String description;
 
-    @Size(max = 255, message = "Logo URL must not exceed 255 characters")
+    @Nullable
     private String logoUrl;
 }

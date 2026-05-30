@@ -27,6 +27,8 @@ public class User extends BaseEntity{
 
     private String providerUserId;
 
+    private String designation;
+
     private String profileImage;
 
     private Boolean isActive = true;

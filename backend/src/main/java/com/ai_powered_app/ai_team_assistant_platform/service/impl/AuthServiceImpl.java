@@ -151,7 +151,7 @@ public class AuthServiceImpl implements AuthService {
         String userEmail = authentication.getName();
 
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with this id."));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
 
         return UserResponse.builder()
                 .id(user.getId())
