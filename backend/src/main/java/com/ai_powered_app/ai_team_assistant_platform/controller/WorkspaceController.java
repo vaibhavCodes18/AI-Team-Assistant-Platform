@@ -1,6 +1,7 @@
 package com.ai_powered_app.ai_team_assistant_platform.controller;
 
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceUpdateRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceResponse;
 import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.WorkspaceService;
@@ -28,6 +29,15 @@ public class WorkspaceController {
     public ResponseEntity<ApiResponse<WorkspaceResponse>> getWorkspace(@PathVariable("id") Long id){
         WorkspaceResponse response = workspaceService.getWorkspaceById(id);
         ApiResponse<WorkspaceResponse> apiRes = new ApiResponse<>(200, "Workspaces Fetched", response);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<WorkspaceResponse>> updateWorkspace(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody WorkspaceUpdateRequest workspaceUpdateRequest) {
+        WorkspaceResponse response = workspaceService.updateWorkspace(id, workspaceUpdateRequest);
+        ApiResponse<WorkspaceResponse> apiRes = new ApiResponse<>(200, "Workspace Updated", response);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 }

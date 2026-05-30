@@ -1,6 +1,7 @@
 package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceUpdateRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.User;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Workspace;
@@ -69,6 +70,40 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         return getWorkspaceResponse(workspace);
 
+    }
+
+    @Override
+    public WorkspaceResponse updateWorkspace(Long workspaceId, WorkspaceUpdateRequest request) {
+        User user = getAuthenticateUser();
+
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
+
+        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), user.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+
+        if (member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN) {
+            throw new BadCredentialsException("You do not have permission to update this workspace");
+        }
+
+        if (request.getName() != null) {
+            workspace.setName(request.getName());
+        }
+        if (request.getSlug() != null) {
+            workspace.setSlug(request.getSlug());
+        }
+        if (request.getDescription() != null) {
+            workspace.setDescription(request.getDescription());
+        }
+        if (request.getLogoUrl() != null) {
+            workspace.setLogoUrl(request.getLogoUrl());
+        }
+        if (request.getIsActive() != null) {
+            workspace.setIsActive(request.getIsActive());
+        }
+
+        Workspace savedWorkspace = workspaceRepository.save(workspace);
+        return getWorkspaceResponse(savedWorkspace);
     }
 
     private WorkspaceResponse getWorkspaceResponse(Workspace savedWorkspace) {
