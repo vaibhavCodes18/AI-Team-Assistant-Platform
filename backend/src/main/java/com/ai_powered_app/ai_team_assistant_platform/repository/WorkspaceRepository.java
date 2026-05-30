@@ -17,6 +17,7 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, Long> {
 
     List<Workspace> findByOwner(User owner);
 
+
     List<Workspace> findByOwnerId(Long ownerId);
 
     List<Workspace> findByIsActive(Boolean isActive);

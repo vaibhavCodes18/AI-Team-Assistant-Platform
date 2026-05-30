@@ -5,8 +5,9 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceRespo
 
 public interface WorkspaceService {
     WorkspaceResponse createWorkspace(WorkspaceRequest workspaceRequest);
+    WorkspaceResponse getWorkspaceById(Long workspaceId);
 }
-//•	create workspace
+//•	create workspace - done
 //•	invite member
 //•	remove member
 //•	update member role

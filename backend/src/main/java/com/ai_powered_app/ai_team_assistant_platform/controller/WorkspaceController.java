@@ -8,10 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/workspaces")
@@ -27,4 +24,10 @@ public class WorkspaceController {
         return ResponseEntity.status(HttpStatus.CREATED).body(apiRes);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<WorkspaceResponse>> getWorkspace(@PathVariable("id") Long id){
+        WorkspaceResponse response = workspaceService.getWorkspaceById(id);
+        ApiResponse<WorkspaceResponse> apiRes = new ApiResponse<>(200, "Workspaces Fetched", response);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
 }
