@@ -1,6 +1,7 @@
 package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.ProjectRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateProjectRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Project;
 import com.ai_powered_app.ai_team_assistant_platform.entity.User;
@@ -81,6 +82,39 @@ public class ProjectServiceImpl implements ProjectService {
         List<Project> allProjects = projectRepository.findByWorkspaceId(workspace.getId());
 
         return allProjects.stream().map(this::getProjectResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    public ProjectResponse updateProject(Long projectId, UpdateProjectRequest updateProjectRequest) {
+        User currentUser = getAuthenticateUser();
+
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+
+        if(member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN){
+            throw new BadCredentialsException("Only OWNER or ADMIN can update project");
+        }
+
+        if(updateProjectRequest.getName() != null){
+            project.setName(updateProjectRequest.getName());
+        }
+        if(updateProjectRequest.getDescription() != null){
+            project.setDescription(updateProjectRequest.getDescription());
+        }
+        if(updateProjectRequest.getStatus() != null){
+            project.setStatus(updateProjectRequest.getStatus());
+        }
+        if(updateProjectRequest.getStartDate() != null){
+            project.setStartDate(updateProjectRequest.getStartDate());
+        }
+        if(updateProjectRequest.getDeadline() != null){
+            project.setDeadline(updateProjectRequest.getDeadline());
+        }
+        Project updatedProject = projectRepository.save(project);
+
+        return getProjectResponse(updatedProject);
     }
 
 
