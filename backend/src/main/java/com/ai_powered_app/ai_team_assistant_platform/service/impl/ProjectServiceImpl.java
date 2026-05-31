@@ -18,6 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class ProjectServiceImpl implements ProjectService {
 
@@ -65,6 +68,21 @@ public class ProjectServiceImpl implements ProjectService {
 
         return getProjectResponse(project);
     }
+
+    @Override
+    public List<ProjectResponse> getWorkspaceProjects(Long workspaceId) {
+        User currentUser = getAuthenticateUser();
+        Workspace workspace = workspaceRepository.findById(workspaceId).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
+
+        if(!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())){
+            throw new BadCredentialsException("You are not a member of this workspace");
+        }
+
+        List<Project> allProjects = projectRepository.findByWorkspaceId(workspace.getId());
+
+        return allProjects.stream().map(this::getProjectResponse).collect(Collectors.toList());
+    }
+
 
     private Project setProject(ProjectRequest projectRequest, Workspace workspace, User currentUser) {
         Project project = new Project();

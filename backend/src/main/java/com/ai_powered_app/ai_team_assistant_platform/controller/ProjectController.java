@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/projects")
 public class ProjectController {
@@ -31,6 +33,14 @@ public class ProjectController {
         ProjectResponse projectResponse = projectService.getProjectById(id);
 
         ApiResponse<ProjectResponse> apiRes = new ApiResponse<>(200, "project fetched", projectResponse);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
+
+    @GetMapping("/workspaces/{workspaceId}")
+    public ResponseEntity<ApiResponse<List<ProjectResponse>>> getWorkspaceProject(@PathVariable("workspaceId") Long workspaceId){
+        List<ProjectResponse> projectResponse = projectService.getWorkspaceProjects(workspaceId);
+
+        ApiResponse<List<ProjectResponse>> apiRes = new ApiResponse<>(200, "All projects fetched", projectResponse);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 

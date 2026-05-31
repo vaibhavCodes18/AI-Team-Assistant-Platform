@@ -3,7 +3,10 @@ package com.ai_powered_app.ai_team_assistant_platform.service.interfaces;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.ProjectRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectResponse;
 
+import java.util.List;
+
 public interface ProjectService {
      ProjectResponse createProject(ProjectRequest projectRequest);
      ProjectResponse getProjectById(Long projectId);
+     List<ProjectResponse> getWorkspaceProjects(Long workspaceId);
 }
