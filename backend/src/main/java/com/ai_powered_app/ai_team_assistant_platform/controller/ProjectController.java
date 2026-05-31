@@ -53,4 +53,12 @@ public class ProjectController {
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 
+    @DeleteMapping("/{projectId}")
+    public ResponseEntity<ApiResponse<Void>> deleteProject(@PathVariable("projectId") Long projectId){
+        projectService.deleteProject(projectId);
+
+        ApiResponse<Void> apiRes = new ApiResponse<>(200, "Project delete successfully", null);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
+
 }

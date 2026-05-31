@@ -117,6 +117,22 @@ public class ProjectServiceImpl implements ProjectService {
         return getProjectResponse(updatedProject);
     }
 
+    @Override
+    public void deleteProject(Long projectId) {
+        User currentUser = getAuthenticateUser();
+
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+
+        if(member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN){
+            throw new BadCredentialsException("Only OWNER or ADMIN can update project");
+        }
+
+        projectRepository.delete(project);
+    }
+
 
     private Project setProject(ProjectRequest projectRequest, Workspace workspace, User currentUser) {
         Project project = new Project();

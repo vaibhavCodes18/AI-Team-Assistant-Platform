@@ -11,4 +11,5 @@ public interface ProjectService {
      ProjectResponse getProjectById(Long projectId);
      List<ProjectResponse> getWorkspaceProjects(Long workspaceId);
      ProjectResponse updateProject(Long projectId, UpdateProjectRequest updateProjectRequest);
+     void deleteProject(Long projectId);
 }
