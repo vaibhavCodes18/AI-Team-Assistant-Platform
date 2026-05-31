@@ -5,4 +5,5 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectRespons
 
 public interface ProjectService {
      ProjectResponse createProject(ProjectRequest projectRequest);
+     ProjectResponse getProjectById(Long projectId);
 }

@@ -53,6 +53,19 @@ public class ProjectServiceImpl implements ProjectService {
         return getProjectResponse(savedProject);
     }
 
+    @Override
+    public ProjectResponse getProjectById(Long projectId) {
+        User currentUser = getAuthenticateUser();
+
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+        if(!workspaceMemberRepository.existsByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())){
+            throw new BadCredentialsException("You are not a member of this workspace");
+        }
+
+        return getProjectResponse(project);
+    }
+
     private Project setProject(ProjectRequest projectRequest, Workspace workspace, User currentUser) {
         Project project = new Project();
         project.setName(projectRequest.getName());
