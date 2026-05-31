@@ -19,7 +19,7 @@ public class ProjectResponse {
     private String name;
     private String description;
     private ProjectStatus status;
-    private UserResponse createdBy;
+    private Long createdById;
     private LocalDate startDate;
     private LocalDate deadline;
     private LocalDateTime createdAt;

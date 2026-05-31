@@ -1,6 +1,7 @@
 package com.ai_powered_app.ai_team_assistant_platform.dto.request;
 
 import com.ai_powered_app.ai_team_assistant_platform.enums.ProjectStatus;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -24,10 +25,11 @@ public class ProjectRequest {
     @Size(max = 100, message = "Project name must not exceed 100 characters")
     private String name;
 
+    @Nullable
     @Size(max = 500, message = "Description must not exceed 500 characters")
     private String description;
 
-    @NotNull(message = "Project status is required")
+    @Nullable
     private ProjectStatus status;
 
     private LocalDate startDate;
