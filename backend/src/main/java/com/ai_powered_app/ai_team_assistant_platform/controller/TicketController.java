@@ -48,4 +48,11 @@ public class TicketController {
         return ResponseEntity.status(HttpStatus.CREATED).body(apiRes);
     }
 
+    @DeleteMapping("/{ticketId}")
+    public ResponseEntity<ApiResponse<Void>> removeTicket(@PathVariable("ticketId") Long ticketId){
+        ticketService.deleteTicket(ticketId);
+        ApiResponse<Void> apiRes = new ApiResponse<>(200, "Ticket deleted", null);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
+
 }

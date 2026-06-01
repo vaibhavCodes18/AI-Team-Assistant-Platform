@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class TicketServiceImpl implements TicketService {
 
@@ -151,6 +153,29 @@ public class TicketServiceImpl implements TicketService {
         ticketComment.setContent(ticketCommentRequest.getContent());
 
         return mapToTicketCommentResponse(ticketCommentRepository.save(ticketComment));
+    }
+
+    @Override
+    public void deleteTicket(Long ticketId) {
+        User currentUser = getAuthenticateUser();
+
+        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
+
+        Project project = projectRepository.findById(ticket.getProject().getId()).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+        Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId()).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
+
+        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+
+        if (member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN ) {
+            throw new BadCredentialsException("You do not have permission to delete this ticket");
+        }
+
+        List<TicketComment> ticketComments = ticketCommentRepository.findByTicketIdOrderByCreatedAtAsc(ticketId);
+        ticketCommentRepository.deleteAll(ticketComments);
+
+        ticketRepository.deleteById(ticketId);
     }
 
     private TicketCommentResponse mapToTicketCommentResponse(TicketComment ticketComment){
