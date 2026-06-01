@@ -1,6 +1,7 @@
 package com.ai_powered_app.ai_team_assistant_platform.controller;
 
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketUpdateRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
 import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TicketService;
@@ -28,6 +29,13 @@ public class TicketController {
     public ResponseEntity<ApiResponse<TicketResponse>> getTicket(@PathVariable("ticketId") Long ticketId){
         TicketResponse response = ticketService.getTicketById(ticketId);
         ApiResponse<TicketResponse> apiRes = new ApiResponse<>(200, "Ticket fetched", response);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
+
+    @PutMapping("/{ticketId}")
+    public ResponseEntity<ApiResponse<TicketResponse>> updateTicket(@PathVariable("ticketId") Long ticketId, @Valid @RequestBody TicketUpdateRequest ticketUpdateRequest){
+        TicketResponse response = ticketService.updateTicket(ticketId, ticketUpdateRequest);
+        ApiResponse<TicketResponse> apiRes = new ApiResponse<>(200, "Ticket updated", response);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 

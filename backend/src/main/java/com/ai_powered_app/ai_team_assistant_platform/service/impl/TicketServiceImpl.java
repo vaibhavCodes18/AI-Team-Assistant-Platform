@@ -1,11 +1,9 @@
 package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketUpdateRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
-import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.*;
-import com.ai_powered_app.ai_team_assistant_platform.enums.TicketPriority;
-import com.ai_powered_app.ai_team_assistant_platform.enums.TicketStatus;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
@@ -14,9 +12,6 @@ import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TicketSe
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Service
 public class TicketServiceImpl implements TicketService {
@@ -84,6 +79,47 @@ public class TicketServiceImpl implements TicketService {
         }
 
         return mapToTicketResponse(ticket);
+    }
+
+    @Override
+    public TicketResponse updateTicket(Long ticketId, TicketUpdateRequest ticketUpdateRequest) {
+
+        User currentUser = getAuthenticateUser();
+
+        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
+
+        Project project = projectRepository.findById(ticket.getProject().getId()).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+        Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId()).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
+
+        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+
+        if (member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN && member.getRole() != WorkspaceRole.MEMBER) {
+            throw new BadCredentialsException("You do not have permission to create this ticket");
+        }
+
+        if(ticketUpdateRequest.getTitle() != null){
+            ticket.setTitle(ticketUpdateRequest.getTitle());
+        }
+        if(ticketUpdateRequest.getDescription() != null){
+            ticket.setDescription(ticketUpdateRequest.getDescription());
+        }
+        if(ticketUpdateRequest.getStatus() != null){
+            ticket.setStatus(ticketUpdateRequest.getStatus());
+        }
+        if(ticketUpdateRequest.getPriority() != null){
+            ticket.setPriority(ticketUpdateRequest.getPriority());
+        }
+        if(ticketUpdateRequest.getAssigneeEmail() != null){
+            User assignee = userRepository.findByEmail(ticketUpdateRequest.getAssigneeEmail()).orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
+            ticket.setAssignee(assignee);
+        }
+        if(ticketUpdateRequest.getDueDate() != null){
+            ticket.setDueDate(ticketUpdateRequest.getDueDate());
+        }
+
+        return mapToTicketResponse(ticketRepository.save(ticket));
     }
 
     private TicketResponse mapToTicketResponse(Ticket ticket){
