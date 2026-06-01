@@ -29,4 +29,5 @@ public class ActivityLog extends BaseEntity{
 
     @Column(columnDefinition = "TEXT")
     private String metadata;
+    
 }

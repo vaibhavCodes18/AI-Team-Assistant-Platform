@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tickets")
@@ -45,5 +46,7 @@ public class Ticket extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     private String aiSummary;
+
+
 
 }

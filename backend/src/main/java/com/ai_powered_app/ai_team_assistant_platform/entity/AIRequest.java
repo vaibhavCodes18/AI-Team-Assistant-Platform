@@ -38,4 +38,6 @@ public class AIRequest extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private AIRequestStatus status;
+
+
 }

@@ -32,4 +32,6 @@ public class User extends BaseEntity{
     private String profileImage;
 
     private Boolean isActive = true;
+
+
 }

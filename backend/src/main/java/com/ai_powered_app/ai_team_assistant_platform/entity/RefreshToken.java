@@ -19,4 +19,6 @@ public class RefreshToken extends BaseEntity {
     private String token;
 
     private Boolean isRevoked = false;
+
+
 }

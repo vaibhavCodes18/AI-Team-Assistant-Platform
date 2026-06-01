@@ -23,4 +23,6 @@ public class TicketComment extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     private String content;
+
+
 }

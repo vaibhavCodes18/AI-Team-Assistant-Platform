@@ -39,4 +39,6 @@ public class WorkspaceMember extends BaseEntity{
     private User invitedBy;
 
     private LocalDateTime joinedAt;
+
+
 }
