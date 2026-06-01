@@ -1,7 +1,9 @@
 package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketCommentRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketUpdateRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketCommentResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.*;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
@@ -30,6 +32,9 @@ public class TicketServiceImpl implements TicketService {
 
     @Autowired
     private ProjectRepository projectRepository;
+
+    @Autowired
+    private TicketCommentRepository ticketCommentRepository;
 
     @Override
     public TicketResponse createTicket(TicketRequest ticketRequest) {
@@ -120,6 +125,43 @@ public class TicketServiceImpl implements TicketService {
         }
 
         return mapToTicketResponse(ticketRepository.save(ticket));
+    }
+
+    @Override
+    public TicketCommentResponse addTicketComment(Long ticketId, TicketCommentRequest ticketCommentRequest) {
+
+        User currentUser = getAuthenticateUser();
+
+        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
+
+        Project project = projectRepository.findById(ticket.getProject().getId()).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+        Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId()).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
+
+        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+
+        if (member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN && member.getRole() != WorkspaceRole.MEMBER) {
+            throw new BadCredentialsException("You do not have permission to add comment on this ticket");
+        }
+
+        TicketComment ticketComment = new TicketComment();
+        ticketComment.setTicket(ticket);
+        ticketComment.setUser(currentUser);
+        ticketComment.setContent(ticketCommentRequest.getContent());
+
+        return mapToTicketCommentResponse(ticketCommentRepository.save(ticketComment));
+    }
+
+    private TicketCommentResponse mapToTicketCommentResponse(TicketComment ticketComment){
+        return TicketCommentResponse.builder()
+                .id(ticketComment.getId())
+                .content(ticketComment.getContent())
+                .ticketId(ticketComment.getTicket().getId())
+                .userId(ticketComment.getUser().getId())
+                .createdAt(ticketComment.getCreatedAt())
+                .updatedAt(ticketComment.getUpdatedAt())
+                .build();
     }
 
     private TicketResponse mapToTicketResponse(Ticket ticket){

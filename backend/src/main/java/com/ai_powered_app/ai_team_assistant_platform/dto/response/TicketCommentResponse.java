@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class TicketCommentResponse {
     private Long id;
     private Long ticketId;
-    private UserResponse user;
+    private Long userId;
     private String content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

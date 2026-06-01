@@ -13,9 +13,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TicketCommentRequest {
 
-    @NotNull(message = "Ticket ID is required")
-    private Long ticketId;
-
     @NotBlank(message = "Comment content must not be blank")
     private String content;
 }

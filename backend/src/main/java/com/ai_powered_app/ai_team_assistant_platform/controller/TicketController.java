@@ -1,7 +1,9 @@
 package com.ai_powered_app.ai_team_assistant_platform.controller;
 
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketCommentRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketUpdateRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketCommentResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
 import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TicketService;
@@ -37,6 +39,13 @@ public class TicketController {
         TicketResponse response = ticketService.updateTicket(ticketId, ticketUpdateRequest);
         ApiResponse<TicketResponse> apiRes = new ApiResponse<>(200, "Ticket updated", response);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
+
+    @PostMapping("/{ticketId}/comments")
+    public ResponseEntity<ApiResponse<TicketCommentResponse>> addTicketComment(@PathVariable("ticketId") Long ticketId, @Valid @RequestBody TicketCommentRequest ticketCommentRequest){
+        TicketCommentResponse response = ticketService.addTicketComment(ticketId, ticketCommentRequest);
+        ApiResponse<TicketCommentResponse> apiRes = new ApiResponse<>(201, "Ticket comment added", response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(apiRes);
     }
 
 }
