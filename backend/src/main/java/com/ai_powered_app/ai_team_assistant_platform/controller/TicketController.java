@@ -8,10 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/tickets")
@@ -25,6 +22,13 @@ public class TicketController {
         TicketResponse response = ticketService.createTicket(ticketRequest);
         ApiResponse<TicketResponse> apiRes = new ApiResponse<>(201, "Ticket created", response);
         return ResponseEntity.status(HttpStatus.CREATED).body(apiRes);
+    }
+
+    @GetMapping("/{ticketId}")
+    public ResponseEntity<ApiResponse<TicketResponse>> getTicket(@PathVariable("ticketId") Long ticketId){
+        TicketResponse response = ticketService.getTicketById(ticketId);
+        ApiResponse<TicketResponse> apiRes = new ApiResponse<>(200, "Ticket fetched", response);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 
 }

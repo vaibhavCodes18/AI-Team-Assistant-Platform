@@ -69,6 +69,23 @@ public class TicketServiceImpl implements TicketService {
         return mapToTicketResponse(savedTicket);
     }
 
+    @Override
+    public TicketResponse getTicketById(Long ticketId) {
+        User currentUser = getAuthenticateUser();
+
+        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
+
+        Project project = projectRepository.findById(ticket.getProject().getId()).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+        Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId()).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
+
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())) {
+            throw new BadCredentialsException("You are not a member of this workspace");
+        }
+
+        return mapToTicketResponse(ticket);
+    }
+
     private TicketResponse mapToTicketResponse(Ticket ticket){
         return TicketResponse.builder()
                 .id(ticket.getId())
