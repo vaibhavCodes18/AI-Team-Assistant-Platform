@@ -33,7 +33,7 @@ public class TicketRequest {
     @NotNull(message = "Ticket priority is required")
     private TicketPriority priority;
 
-    private Long assigneeId;
+    private String assigneeEmail;
 
     private LocalDate dueDate;
 }

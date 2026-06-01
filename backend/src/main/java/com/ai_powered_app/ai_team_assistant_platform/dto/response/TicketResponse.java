@@ -21,8 +21,8 @@ public class TicketResponse {
     private String description;
     private TicketStatus status;
     private TicketPriority priority;
-    private UserResponse assignee;
-    private UserResponse createdBy;
+    private Long assigneeId;
+    private Long createdById;
     private LocalDate dueDate;
     private String aiSummary;
     private LocalDateTime createdAt;
