@@ -9,6 +9,8 @@ import com.ai_powered_app.ai_team_assistant_platform.entity.*;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
+import com.ai_powered_app.ai_team_assistant_platform.kafka.event.TicketCreatedEvent;
+import com.ai_powered_app.ai_team_assistant_platform.kafka.producer.TicketEventProducer;
 import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TicketService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,9 @@ public class TicketServiceImpl implements TicketService {
 
     @Autowired
     private WorkspaceRepository workspaceRepository;
+
+    @Autowired
+    private TicketEventProducer ticketEventProducer;
 
     @Autowired
     private UserRepository userRepository;
@@ -67,6 +72,29 @@ public class TicketServiceImpl implements TicketService {
         ticket.setDueDate(ticketRequest.getDueDate());
 
         Ticket savedTicket = ticketRepository.save(ticket);
+
+        TicketCreatedEvent event =
+                TicketCreatedEvent.builder()
+                        .ticketId(savedTicket.getId())
+                        .title(savedTicket.getTitle())
+                        .projectId(project.getId())
+                        .workspaceId(
+                                project.getWorkspace().getId()
+                        )
+                        .createdByUserId(
+                                currentUser.getId()
+                        )
+                        .assignedUserId(
+                                assignee != null
+                                        ? assignee.getId()
+                                        : null
+                        )
+                        .createdAt(
+                                savedTicket.getCreatedAt()
+                        )
+                        .build();
+        ticketEventProducer
+                .publishTicketCreatedEvent(event);
 
         return mapToTicketResponse(savedTicket);
     }

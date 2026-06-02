@@ -1,5 +1,6 @@
 package com.ai_powered_app.ai_team_assistant_platform.entity;
 
+import com.ai_powered_app.ai_team_assistant_platform.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,7 +23,8 @@ public class Notification extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String message;
 
-    private String type;
+    @Enumerated(EnumType.STRING)
+    private NotificationType type;
 
     private Boolean isRead = false;
 

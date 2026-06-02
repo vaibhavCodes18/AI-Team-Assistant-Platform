@@ -42,5 +42,4 @@ public class Document extends BaseEntity{
     @Enumerated(EnumType.STRING)
     private ProcessingStatus processingStatus;
 
-
 }
