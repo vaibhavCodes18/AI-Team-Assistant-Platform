@@ -1,5 +1,6 @@
 package com.ai_powered_app.ai_team_assistant_platform.kafka.config;
 
+import com.ai_powered_app.ai_team_assistant_platform.kafka.event.DocumentUploadedEvent;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.event.TicketCreatedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -22,8 +23,12 @@ public class KafkaConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
+    // =========================
+    // Producer Configuration
+    // =========================
+
     @Bean
-    public ProducerFactory<String, TicketCreatedEvent> producerFactory() {
+    public ProducerFactory<String, Object> producerFactory() {
 
         Map<String, Object> config = new HashMap<>();
 
@@ -46,12 +51,16 @@ public class KafkaConfig {
     }
 
     @Bean
-    public KafkaTemplate<String, TicketCreatedEvent> kafkaTemplate() {
+    public KafkaTemplate<String, Object> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
 
+    // =========================
+    // Ticket Consumer
+    // =========================
+
     @Bean
-    public ConsumerFactory<String, TicketCreatedEvent> consumerFactory() {
+    public ConsumerFactory<String, TicketCreatedEvent> ticketConsumerFactory() {
 
         JsonDeserializer<TicketCreatedEvent> deserializer =
                 new JsonDeserializer<>(TicketCreatedEvent.class);
@@ -67,7 +76,7 @@ public class KafkaConfig {
 
         config.put(
                 ConsumerConfig.GROUP_ID_CONFIG,
-                "ai-team-assistant-group"
+                "ticket-group"
         );
 
         config.put(
@@ -85,14 +94,69 @@ public class KafkaConfig {
     @Bean
     public ConcurrentKafkaListenerContainerFactory<
             String,
-            TicketCreatedEvent> kafkaListenerContainerFactory() {
+            TicketCreatedEvent> ticketKafkaListenerContainerFactory() {
 
         ConcurrentKafkaListenerContainerFactory<
                 String,
                 TicketCreatedEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
 
-        factory.setConsumerFactory(consumerFactory());
+        factory.setConsumerFactory(
+                ticketConsumerFactory()
+        );
+
+        return factory;
+    }
+
+    // =========================
+    // Document Consumer
+    // =========================
+
+    @Bean
+    public ConsumerFactory<String, DocumentUploadedEvent> documentConsumerFactory() {
+
+        JsonDeserializer<DocumentUploadedEvent> deserializer =
+                new JsonDeserializer<>(DocumentUploadedEvent.class);
+
+        deserializer.addTrustedPackages("*");
+
+        Map<String, Object> config = new HashMap<>();
+
+        config.put(
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                bootstrapServers
+        );
+
+        config.put(
+                ConsumerConfig.GROUP_ID_CONFIG,
+                "document-group"
+        );
+
+        config.put(
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
+                "earliest"
+        );
+
+        return new DefaultKafkaConsumerFactory<>(
+                config,
+                new StringDeserializer(),
+                deserializer
+        );
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<
+            String,
+            DocumentUploadedEvent> documentKafkaListenerContainerFactory() {
+
+        ConcurrentKafkaListenerContainerFactory<
+                String,
+                DocumentUploadedEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+
+        factory.setConsumerFactory(
+                documentConsumerFactory()
+        );
 
         return factory;
     }

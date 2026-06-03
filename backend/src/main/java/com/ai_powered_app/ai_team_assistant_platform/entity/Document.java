@@ -2,10 +2,7 @@ package com.ai_powered_app.ai_team_assistant_platform.entity;
 
 import com.ai_powered_app.ai_team_assistant_platform.enums.ProcessingStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Table(name = "documents")
@@ -13,6 +10,12 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
+@Builder
+@ToString(exclude = {
+        "workspace",
+        "project",
+        "uploadedBy"
+})
 public class Document extends BaseEntity{
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workspace_id")

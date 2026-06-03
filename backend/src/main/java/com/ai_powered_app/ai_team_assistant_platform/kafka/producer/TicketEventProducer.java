@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TicketEventProducer {
 
-    private final KafkaTemplate<String, TicketCreatedEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void publishTicketCreatedEvent(TicketCreatedEvent event) {
 
