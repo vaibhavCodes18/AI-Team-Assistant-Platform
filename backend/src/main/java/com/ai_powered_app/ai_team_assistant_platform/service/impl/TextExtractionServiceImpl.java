@@ -1,5 +1,6 @@
 package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
+import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.FileStorageService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TextExtractionService;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,7 @@ public class TextExtractionServiceImpl implements TextExtractionService {
         try {
 
             if (filePath == null || filePath.isBlank()) {
-                throw new RuntimeException("File path cannot be null");
+                throw new ResourceNotFoundException("File path cannot be null");
             }
 
             String lowerCasePath = filePath.toLowerCase();
@@ -35,7 +36,7 @@ public class TextExtractionServiceImpl implements TextExtractionService {
                 return extractTxtText(filePath);
             }
 
-            throw new RuntimeException(
+            throw new ResourceNotFoundException(
                     "Unsupported file type: " + filePath
             );
 
@@ -47,9 +48,8 @@ public class TextExtractionServiceImpl implements TextExtractionService {
                     ex
             );
 
-            throw new RuntimeException(
-                    "Text extraction failed",
-                    ex
+            throw new ResourceNotFoundException(
+                    "Text extraction failed"
             );
         }
     }

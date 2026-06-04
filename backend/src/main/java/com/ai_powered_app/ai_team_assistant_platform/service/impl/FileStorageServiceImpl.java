@@ -1,6 +1,7 @@
 package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
 import com.ai_powered_app.ai_team_assistant_platform.config.StorageProperties;
+import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.FileStorageService;
 import com.nimbusds.jose.util.Resource;
 import org.springframework.stereotype.Service;
@@ -51,7 +52,7 @@ public class FileStorageServiceImpl implements FileStorageService {
                 return targetLocation.toString();
 
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new ResourceNotFoundException(e.getMessage());
             }
     }
 

@@ -52,7 +52,7 @@ public class DocumentProcessingServiceImpl implements DocumentProcessingService 
                     );
 
             if (extractedText.isBlank()) {
-                throw new RuntimeException(
+                throw new ResourceNotFoundException(
                         "No content found in document"
                 );
             }
@@ -61,9 +61,7 @@ public class DocumentProcessingServiceImpl implements DocumentProcessingService 
                     aiSummaryService.generateSummary(
                             extractedText
                     );
-
-
-
+            System.out.println(summary);
             document.setSummary(summary);
 
             document.setProcessingStatus(

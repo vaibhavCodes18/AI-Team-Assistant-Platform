@@ -16,14 +16,15 @@ public class DocumentResponse {
     private Long id;
     private Long workspaceId;
     private Long projectId;
-    private UserResponse uploadedBy;
+    private Long uploadedById;
     private String title;
+
     private String fileName;
+
     private String fileType;
+
     private Long fileSize;
-    private String storagePath;
-    private String summary;
+
+
     private ProcessingStatus processingStatus;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }
