@@ -2,23 +2,29 @@ package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.DocumentRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.DocumentResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.DocumentViewResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Document;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Project;
 import com.ai_powered_app.ai_team_assistant_platform.entity.User;
+import com.ai_powered_app.ai_team_assistant_platform.entity.WorkspaceMember;
 import com.ai_powered_app.ai_team_assistant_platform.enums.ProcessingStatus;
+import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.event.DocumentUploadedEvent;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.producer.DocumentEventProducer;
 import com.ai_powered_app.ai_team_assistant_platform.repository.DocumentRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.ProjectRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.UserRepository;
+import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceMemberRepository;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.DocumentService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.FileStorageService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class DocumentServiceImpl implements DocumentService {
 
         private final DocumentRepository documentRepository;
@@ -31,15 +37,8 @@ public class DocumentServiceImpl implements DocumentService {
 
         private final DocumentEventProducer documentEventProducer;
 
-        public DocumentServiceImpl(DocumentRepository documentRepository, ProjectRepository projectRepository,
-                        UserRepository userRepository, FileStorageService fileStorageService,
-                        DocumentEventProducer documentEventProducer) {
-                this.documentRepository = documentRepository;
-                this.projectRepository = projectRepository;
-                this.userRepository = userRepository;
-                this.fileStorageService = fileStorageService;
-                this.documentEventProducer = documentEventProducer;
-        }
+        private final WorkspaceMemberRepository workspaceMemberRepository;
+
 
         @Override
         public DocumentResponse uploadDocument(DocumentRequest documentRequest) {
@@ -99,6 +98,39 @@ public class DocumentServiceImpl implements DocumentService {
                                                 event);
 
                 return mapToDocumentResponse(savedDocument);
+        }
+
+        @Override
+        public DocumentViewResponse getDocumentById(Long documentId) {
+
+                User currentUser = getAuthenticateUser();
+
+                Document document = documentRepository.findById(documentId).orElseThrow(() -> new ResourceNotFoundException("Documet not found"));
+
+                if(!workspaceMemberRepository.existsByWorkspaceIdAndUserId(document.getWorkspace().getId(), currentUser.getId())){
+                        throw new BadCredentialsException("You are not a member of this workspace");
+                }
+
+                return mapToDocumentViewResponse(document);
+        }
+
+        private DocumentViewResponse mapToDocumentViewResponse(Document savedDocument) {
+
+                return DocumentViewResponse.builder()
+                        .workspaceId(savedDocument.getWorkspace().getId())
+                        .projectId(savedDocument.getProject().getId())
+                        .uploadedById(savedDocument.getUploadedBy().getId())
+                        .id(savedDocument.getId())
+                        .title(savedDocument.getTitle())
+                        .fileName(savedDocument.getFileName())
+                        .fileType(savedDocument.getFileType())
+                        .fileSize(savedDocument.getFileSize())
+                        .processingStatus(
+                                savedDocument.getProcessingStatus())
+                        .summary(savedDocument.getSummary())
+                        .createdAt(savedDocument.getCreatedAt())
+                        .updatedAt(savedDocument.getUpdatedAt())
+                        .build();
         }
 
         private DocumentResponse mapToDocumentResponse(Document savedDocument) {

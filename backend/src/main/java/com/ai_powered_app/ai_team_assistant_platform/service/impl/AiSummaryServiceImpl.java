@@ -19,8 +19,8 @@ public class AiSummaryServiceImpl implements AiSummaryService {
         }
 
         String truncatedContent =
-                content.length() > 12000
-                        ? content.substring(0, 12000)
+                content.length() > 1000
+                        ? content.substring(0, 1000)
                         : content;
 
         return chatClient.prompt()
