@@ -13,4 +13,5 @@ public interface DocumentService {
     List<DocumentViewResponse> getDocumentsByWorkspace(Long workspaceId);
     Resource downloadDocument(Long documentId);
     void deleteDocument(Long documentId);
+    String getAiSummary(Long documentId);
 }

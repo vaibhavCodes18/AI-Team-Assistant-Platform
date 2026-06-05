@@ -170,6 +170,20 @@ public class DocumentServiceImpl implements DocumentService {
 
         }
 
+        @Override
+        public String getAiSummary(Long documentId) {
+                User currentUser = getAuthenticateUser();
+
+                Document document = documentRepository.findById(documentId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
+
+                if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(document.getWorkspace().getId(),
+                        currentUser.getId())) {
+                        throw new AccessDeniedException("You are not a member of this workspace");
+                }
+                return document.getSummary();
+        }
+
         private DocumentViewResponse mapToDocumentViewResponse(Document savedDocument) {
                 return DocumentViewResponse.builder()
                                 .workspaceId(savedDocument.getWorkspace().getId())

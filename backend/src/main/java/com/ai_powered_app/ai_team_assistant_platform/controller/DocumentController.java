@@ -72,4 +72,11 @@ public class DocumentController {
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
     }
 
+    @GetMapping("/{documentId}/summary")
+    public ResponseEntity<ApiResponse<String>> getDocumentAiSummary(@PathVariable("documentId") Long documentId){
+        String summary = documentService.getAiSummary(documentId);
+        ApiResponse<String> apiResponse = new ApiResponse<>(200, "Documents summary fetched", summary);
+        return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
+    }
+
 }
