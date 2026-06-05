@@ -12,4 +12,5 @@ public interface DocumentService {
     DocumentViewResponse getDocumentById(Long documentId);
     List<DocumentViewResponse> getDocumentsByWorkspace(Long workspaceId);
     Resource downloadDocument(Long documentId);
+    void deleteDocument(Long documentId);
 }

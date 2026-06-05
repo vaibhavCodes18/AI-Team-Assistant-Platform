@@ -64,4 +64,12 @@ public class DocumentController {
                 )
                 .body(resource);
     }
+
+    @DeleteMapping("/{documentId}")
+    public ResponseEntity<ApiResponse<Void>> deleteDocument(@PathVariable("documentId") Long documentId){
+        documentService.deleteDocument(documentId);
+        ApiResponse<Void> apiResponse = new ApiResponse<>(200, "Documents deleted", null);
+        return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
+    }
+
 }

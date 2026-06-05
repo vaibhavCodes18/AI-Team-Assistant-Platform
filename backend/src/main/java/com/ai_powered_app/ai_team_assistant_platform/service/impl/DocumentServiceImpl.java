@@ -6,7 +6,8 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.DocumentViewRe
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.*;
 import com.ai_powered_app.ai_team_assistant_platform.enums.ProcessingStatus;
-import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
+import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
+import com.ai_powered_app.ai_team_assistant_platform.exception.AccessDeniedException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.event.DocumentUploadedEvent;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.producer.DocumentEventProducer;
@@ -18,6 +19,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,7 +40,6 @@ public class DocumentServiceImpl implements DocumentService {
         private final WorkspaceMemberRepository workspaceMemberRepository;
 
         private final WorkspaceRepository workspaceRepository;
-
 
         @Override
         public DocumentResponse uploadDocument(DocumentRequest documentRequest) {
@@ -105,10 +106,12 @@ public class DocumentServiceImpl implements DocumentService {
 
                 User currentUser = getAuthenticateUser();
 
-                Document document = documentRepository.findById(documentId).orElseThrow(() -> new ResourceNotFoundException("Documet not found"));
+                Document document = documentRepository.findById(documentId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
 
-                if(!workspaceMemberRepository.existsByWorkspaceIdAndUserId(document.getWorkspace().getId(), currentUser.getId())){
-                        throw new BadCredentialsException("You are not a member of this workspace");
+                if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(document.getWorkspace().getId(),
+                                currentUser.getId())) {
+                        throw new AccessDeniedException("You are not a member of this workspace");
                 }
 
                 return mapToDocumentViewResponse(document);
@@ -119,8 +122,8 @@ public class DocumentServiceImpl implements DocumentService {
 
                 User currentUser = getAuthenticateUser();
 
-                if(!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, currentUser.getId())){
-                        throw new BadCredentialsException("You are not a member of this workspace");
+                if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, currentUser.getId())) {
+                        throw new AccessDeniedException("You are not a member of this workspace");
                 }
 
                 List<Document> documents = documentRepository.findByWorkspaceId(workspaceId);
@@ -132,30 +135,57 @@ public class DocumentServiceImpl implements DocumentService {
         public Resource downloadDocument(Long documentId) {
                 User currentUser = getAuthenticateUser();
 
-                Document document = documentRepository.findById(documentId).orElseThrow(() -> new ResourceNotFoundException("Documet not found"));
+                Document document = documentRepository.findById(documentId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
 
-                if(!workspaceMemberRepository.existsByWorkspaceIdAndUserId(document.getWorkspace().getId(), currentUser.getId())){
-                        throw new BadCredentialsException("You are not a member of this workspace");
+                if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(document.getWorkspace().getId(),
+                                currentUser.getId())) {
+                        throw new AccessDeniedException("You are not a member of this workspace");
                 }
                 return fileStorageService.loadFile(document.getStoragePath());
         }
 
+        @Override
+        public void deleteDocument(Long documentId) {
+                User currentUser = getAuthenticateUser();
+
+                Document document = documentRepository.findById(documentId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
+
+                WorkspaceMember member = workspaceMemberRepository
+                                .findByWorkspaceIdAndUserId(document.getWorkspace().getId(), currentUser.getId())
+                                .orElseThrow(() -> new AccessDeniedException("You are not a member of this workspace"));
+
+                if (member.getRole() != WorkspaceRole.ADMIN && member.getRole() != WorkspaceRole.OWNER) {
+                        throw new AccessDeniedException("Only OWNER or ADMIN can delete document");
+                }
+
+                try {
+                        fileStorageService.deleteFile(document.getStoragePath());
+                } catch (IOException e) {
+                        throw new RuntimeException("Failed to delete file from storage: " + e.getMessage(), e);
+                }
+
+                documentRepository.deleteById(documentId);
+
+        }
+
         private DocumentViewResponse mapToDocumentViewResponse(Document savedDocument) {
                 return DocumentViewResponse.builder()
-                        .workspaceId(savedDocument.getWorkspace().getId())
-                        .projectId(savedDocument.getProject().getId())
-                        .uploadedById(savedDocument.getUploadedBy().getId())
-                        .id(savedDocument.getId())
-                        .title(savedDocument.getTitle())
-                        .fileName(savedDocument.getFileName())
-                        .fileType(savedDocument.getFileType())
-                        .fileSize(savedDocument.getFileSize())
-                        .processingStatus(
-                                savedDocument.getProcessingStatus())
-                        .summary(savedDocument.getSummary())
-                        .createdAt(savedDocument.getCreatedAt())
-                        .updatedAt(savedDocument.getUpdatedAt())
-                        .build();
+                                .workspaceId(savedDocument.getWorkspace().getId())
+                                .projectId(savedDocument.getProject().getId())
+                                .uploadedById(savedDocument.getUploadedBy().getId())
+                                .id(savedDocument.getId())
+                                .title(savedDocument.getTitle())
+                                .fileName(savedDocument.getFileName())
+                                .fileType(savedDocument.getFileType())
+                                .fileSize(savedDocument.getFileSize())
+                                .processingStatus(
+                                                savedDocument.getProcessingStatus())
+                                .summary(savedDocument.getSummary())
+                                .createdAt(savedDocument.getCreatedAt())
+                                .updatedAt(savedDocument.getUpdatedAt())
+                                .build();
         }
 
         private DocumentResponse mapToDocumentResponse(Document savedDocument) {
