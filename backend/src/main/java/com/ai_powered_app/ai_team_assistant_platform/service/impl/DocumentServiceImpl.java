@@ -4,24 +4,21 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.request.DocumentRequest
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.DocumentResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.DocumentViewResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
-import com.ai_powered_app.ai_team_assistant_platform.entity.Document;
-import com.ai_powered_app.ai_team_assistant_platform.entity.Project;
-import com.ai_powered_app.ai_team_assistant_platform.entity.User;
-import com.ai_powered_app.ai_team_assistant_platform.entity.WorkspaceMember;
+import com.ai_powered_app.ai_team_assistant_platform.entity.*;
 import com.ai_powered_app.ai_team_assistant_platform.enums.ProcessingStatus;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.event.DocumentUploadedEvent;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.producer.DocumentEventProducer;
-import com.ai_powered_app.ai_team_assistant_platform.repository.DocumentRepository;
-import com.ai_powered_app.ai_team_assistant_platform.repository.ProjectRepository;
-import com.ai_powered_app.ai_team_assistant_platform.repository.UserRepository;
-import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceMemberRepository;
+import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.DocumentService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +35,8 @@ public class DocumentServiceImpl implements DocumentService {
         private final DocumentEventProducer documentEventProducer;
 
         private final WorkspaceMemberRepository workspaceMemberRepository;
+
+        private final WorkspaceRepository workspaceRepository;
 
 
         @Override
@@ -112,6 +111,20 @@ public class DocumentServiceImpl implements DocumentService {
                 }
 
                 return mapToDocumentViewResponse(document);
+        }
+
+        @Override
+        public List<DocumentViewResponse> getDocumentsByWorkspace(Long workspaceId) {
+
+                User currentUser = getAuthenticateUser();
+
+                if(!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, currentUser.getId())){
+                        throw new BadCredentialsException("You are not a member of this workspace");
+                }
+
+                List<Document> documents = documentRepository.findByWorkspaceId(workspaceId);
+
+                return documents.stream().map(this::mapToDocumentViewResponse).collect(Collectors.toList());
         }
 
         private DocumentViewResponse mapToDocumentViewResponse(Document savedDocument) {

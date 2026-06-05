@@ -12,6 +12,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/documents")
 public class DocumentController {
@@ -35,4 +37,10 @@ public class DocumentController {
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
     }
 
+    @GetMapping("/workspace/{workspaceId}")
+    public ResponseEntity<ApiResponse<List<DocumentViewResponse>>> getDocumentsByWorkspace(@PathVariable("workspaceId") Long documentId){
+        List<DocumentViewResponse> documentResponse = documentService.getDocumentsByWorkspace(documentId);
+        ApiResponse<List<DocumentViewResponse>> apiResponse = new ApiResponse<>(200, "Documents fetched", documentResponse);
+        return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
+    }
 }
