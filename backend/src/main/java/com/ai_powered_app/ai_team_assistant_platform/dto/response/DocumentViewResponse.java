@@ -3,6 +3,8 @@ package com.ai_powered_app.ai_team_assistant_platform.dto.response;
 import com.ai_powered_app.ai_team_assistant_platform.enums.ProcessingStatus;
 import lombok.Builder;
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.springframework.core.io.Resource;
 
 import java.time.LocalDateTime;
 
@@ -28,6 +30,7 @@ public class DocumentViewResponse {
     private Long workspaceId;
 
     private Long uploadedById;
+
 
     private LocalDateTime createdAt;
 

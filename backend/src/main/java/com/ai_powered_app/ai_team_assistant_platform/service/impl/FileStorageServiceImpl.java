@@ -3,11 +3,13 @@ package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 import com.ai_powered_app.ai_team_assistant_platform.config.StorageProperties;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.FileStorageService;
-import com.nimbusds.jose.util.Resource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -62,7 +64,23 @@ public class FileStorageServiceImpl implements FileStorageService {
     }
 
     @Override
-    public Resource loadFile(String path) {
-        return null;
+    public Resource loadFile(String filePath) {
+        try {
+            Path path = Paths.get(filePath);
+
+            Resource resource = new UrlResource(
+                    path.toUri()
+            );
+
+            if (!resource.exists()) {
+                throw new ResourceNotFoundException(
+                        "File not found"
+                );
+            }
+
+            return resource;
+        } catch (MalformedURLException ex) {
+            throw new ResourceNotFoundException("File not found");
+        }
     }
 }

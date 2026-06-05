@@ -14,6 +14,7 @@ import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.DocumentService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.FileStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -127,8 +128,19 @@ public class DocumentServiceImpl implements DocumentService {
                 return documents.stream().map(this::mapToDocumentViewResponse).collect(Collectors.toList());
         }
 
-        private DocumentViewResponse mapToDocumentViewResponse(Document savedDocument) {
+        @Override
+        public Resource downloadDocument(Long documentId) {
+                User currentUser = getAuthenticateUser();
 
+                Document document = documentRepository.findById(documentId).orElseThrow(() -> new ResourceNotFoundException("Documet not found"));
+
+                if(!workspaceMemberRepository.existsByWorkspaceIdAndUserId(document.getWorkspace().getId(), currentUser.getId())){
+                        throw new BadCredentialsException("You are not a member of this workspace");
+                }
+                return fileStorageService.loadFile(document.getStoragePath());
+        }
+
+        private DocumentViewResponse mapToDocumentViewResponse(Document savedDocument) {
                 return DocumentViewResponse.builder()
                         .workspaceId(savedDocument.getWorkspace().getId())
                         .projectId(savedDocument.getProject().getId())

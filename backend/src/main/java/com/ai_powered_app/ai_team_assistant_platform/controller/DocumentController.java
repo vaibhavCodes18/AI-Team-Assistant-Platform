@@ -7,6 +7,8 @@ import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.DocumentService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -42,5 +44,24 @@ public class DocumentController {
         List<DocumentViewResponse> documentResponse = documentService.getDocumentsByWorkspace(documentId);
         ApiResponse<List<DocumentViewResponse>> apiResponse = new ApiResponse<>(200, "Documents fetched", documentResponse);
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
+    }
+    
+    @GetMapping("/{documentId}/download")
+    public ResponseEntity<Resource> downloadDocument(@PathVariable("documentId") Long documentId){
+        DocumentViewResponse document = documentService.getDocumentById(documentId);
+        Resource resource = documentService.downloadDocument(documentId);
+        return ResponseEntity.ok()
+                .contentType(
+                        MediaType.parseMediaType(
+                                document.getFileType()
+                        )
+                )
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" +
+                                document.getFileName() +
+                                "\""
+                )
+                .body(resource);
     }
 }
