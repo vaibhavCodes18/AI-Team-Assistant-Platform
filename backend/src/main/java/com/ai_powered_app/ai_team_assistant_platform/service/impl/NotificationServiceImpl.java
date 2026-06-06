@@ -30,6 +30,36 @@ public class NotificationServiceImpl implements NotificationService {
         return notifications.stream().map(this::mapToNotificationResponse).toList();
     }
 
+    @Override
+    public NotificationResponse markAsRead(Long notificationId) {
+        User currentUser = getAuthenticateUser();
+
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + notificationId));
+
+        if (!notification.getUser().getId().equals(currentUser.getId())) {
+            throw new ResourceNotFoundException("Notification not found with id: " + notificationId);
+        }
+
+        notification.setIsRead(true);
+        Notification saved = notificationRepository.save(notification);
+        return mapToNotificationResponse(saved);
+    }
+
+    @Override
+    public void deleteNotification(Long notificationId) {
+        User currentUser = getAuthenticateUser();
+
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + notificationId));
+
+        if (!notification.getUser().getId().equals(currentUser.getId())) {
+            throw new ResourceNotFoundException("Notification not found with id: " + notificationId);
+        }
+
+        notificationRepository.delete(notification);
+    }
+
     private NotificationResponse mapToNotificationResponse(Notification notification){
         return NotificationResponse.builder()
                 .id(notification.getId())
