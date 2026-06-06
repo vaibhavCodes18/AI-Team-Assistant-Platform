@@ -19,35 +19,49 @@ public class AiSummaryServiceImpl implements AiSummaryService {
         }
 
         String truncatedContent =
-                content.length() > 1000
-                        ? content.substring(0, 1000)
+                content.length() > 15000
+                        ? content.substring(0, 15000)
                         : content;
 
         return chatClient.prompt()
                 .system("""
-                    You are a senior software architect.
-                    
-                    Your task is to summarize technical documents.
-                    
-                    Output format:
-                    
-                    1. Overview
-                    2. Key Concepts
-                    3. Important Points
-                    
-                    Keep the summary concise and professional.
-                    Focus on important technical details only.
+                    You are an expert Technical Documentation Analyst.
+
+                    Your responsibility is to analyze uploaded technical documents
+                    and generate professional summaries for software teams.
+
+                    Guidelines:
+                    - Focus only on important information.
+                    - Ignore decorative text, icons, headers, footers, and formatting noise.
+                    - Identify key technologies, concepts, architecture, requirements, and action items.
+                    - Keep the summary concise and easy to understand.
+                    - Use professional language.
+                    - Do not invent information that does not exist in the document.
                     """)
                 .user("""
-                    Summarize the following document.
+                    Analyze the following document and generate a structured summary.
 
-                    Requirements:
-                    - Maximum 10 bullet points
-                    - Professional tone
-                    - Highlight important concepts
-                    - Keep summary concise
+                    Return the result in the following format:
 
-                    Document:
+                    ## Overview
+                    Brief explanation of the document.
+
+                    ## Key Concepts
+                    - Concept 1
+                    - Concept 2
+                    - Concept 3
+
+                    ## Important Points
+                    - Point 1
+                    - Point 2
+                    - Point 3
+
+                    ## Technologies Mentioned
+                    - Technology 1
+                    - Technology 2
+
+                    Document Content:
+
                     %s
                     """.formatted(truncatedContent))
                 .call()
