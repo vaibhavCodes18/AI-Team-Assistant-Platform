@@ -3,17 +3,23 @@ package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Document;
 import com.ai_powered_app.ai_team_assistant_platform.enums.ProcessingStatus;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
+import com.ai_powered_app.ai_team_assistant_platform.redis.DocumentRedisService;
 import com.ai_powered_app.ai_team_assistant_platform.repository.DocumentRepository;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.AiSummaryService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.DocumentProcessingService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TextExtractionService;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 
 @Service
 @Transactional
 @Slf4j
+@RequiredArgsConstructor
 public class DocumentProcessingServiceImpl implements DocumentProcessingService {
 
     private final DocumentRepository documentRepository;
@@ -22,11 +28,7 @@ public class DocumentProcessingServiceImpl implements DocumentProcessingService 
 
     private final AiSummaryService aiSummaryService;
 
-    public DocumentProcessingServiceImpl(DocumentRepository documentRepository, TextExtractionService textExtractionService, AiSummaryService aiSummaryService) {
-        this.documentRepository = documentRepository;
-        this.textExtractionService = textExtractionService;
-        this.aiSummaryService = aiSummaryService;
-    }
+    private final DocumentRedisService redisService;
 
     @Override
     @Transactional
@@ -61,7 +63,7 @@ public class DocumentProcessingServiceImpl implements DocumentProcessingService 
                     aiSummaryService.generateSummary(
                             extractedText
                     );
-            System.out.println(summary);
+            redisService.saveSummaryRedis(document.getId(), summary, Duration.ofMinutes(10L));
             document.setSummary(summary);
 
             document.setProcessingStatus(

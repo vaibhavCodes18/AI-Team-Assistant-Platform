@@ -11,6 +11,7 @@ import com.ai_powered_app.ai_team_assistant_platform.exception.AccessDeniedExcep
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.event.DocumentUploadedEvent;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.producer.DocumentEventProducer;
+import com.ai_powered_app.ai_team_assistant_platform.redis.DocumentRedisService;
 import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.DocumentService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.FileStorageService;
@@ -20,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,6 +42,8 @@ public class DocumentServiceImpl implements DocumentService {
         private final WorkspaceMemberRepository workspaceMemberRepository;
 
         private final WorkspaceRepository workspaceRepository;
+
+        private final DocumentRedisService redisService;
 
         @Override
         public DocumentResponse uploadDocument(DocumentRequest documentRequest) {
@@ -181,6 +185,15 @@ public class DocumentServiceImpl implements DocumentService {
                         currentUser.getId())) {
                         throw new AccessDeniedException("You are not a member of this workspace");
                 }
+
+                String redisSummary = redisService.getSummaryRedis(documentId);
+
+                if(redisSummary != null){
+                        return redisSummary;
+                }
+
+                redisService.saveSummaryRedis(documentId, document.getSummary(), Duration.ofMinutes(10L));
+
                 return document.getSummary();
         }
 
