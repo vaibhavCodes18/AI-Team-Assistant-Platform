@@ -8,3 +8,15 @@
 8. Implemented intelligent automation pipelines for device management, data ingestion, and system health monitoring, improving response times and system stability.
 9. Established CI/CD pipelines using Docker and GitHub Actions for automated builds, testing, and zero-downtime deployments.
 10. Optimized backend systems with batch processing, queue-based workflows, and database indexing, reducing database load by 40%.
+
+ai-team-assistant-platform
+├── backend
+│   ├── pom.xml
+│   ├── Dockerfile
+│   └── src
+├── frontend
+│   ├── Dockerfile
+│   └── src
+├── .env
+└── docker-compose.yml
+
