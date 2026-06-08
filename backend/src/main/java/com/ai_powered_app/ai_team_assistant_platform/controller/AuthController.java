@@ -7,6 +7,7 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserLoginRespo
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,13 +67,16 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<?>> logoout(@CookieValue(value = REFRESH_COOKIE_NAME, required = false) String refreshToken,
+                                                                    HttpServletRequest request,
                                                                     HttpServletResponse response){
         if (refreshToken == null || refreshToken.trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ApiResponse<>(400, "Refresh Token is missing in cookies", null));
         }
+        String accessToken =
+                request.getHeader("Authorization").substring(7);
 
-        authService.userLogout(refreshToken);
+        authService.userLogout(refreshToken, accessToken);
 
         addRefreshCookie(response, "", 0);
         ApiResponse<TokenResfreshResponse> res = new ApiResponse<>(200, "User successfully Logout", null);

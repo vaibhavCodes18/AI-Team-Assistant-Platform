@@ -11,12 +11,14 @@ import com.ai_powered_app.ai_team_assistant_platform.enums.AuthProvider;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.DuplicateResourceException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
+import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.JwtBlacklistService;
 import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.UserRedisService;
 import com.ai_powered_app.ai_team_assistant_platform.repository.RefreshTokenRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.UserRepository;
 import com.ai_powered_app.ai_team_assistant_platform.security.CustomUserDetails;
 import com.ai_powered_app.ai_team_assistant_platform.security.JWTService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.AuthService;
+import com.ai_powered_app.ai_team_assistant_platform.utils.CalculateRemainingTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.Date;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -48,6 +51,10 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private UserRedisService redisService;
+
+    @Autowired
+    private JwtBlacklistService jwtBlacklistService;
+
 
     @Override
     public UserResponse userRegister(UserRegistrationRequest userRegistrationRequest) {
@@ -140,7 +147,17 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void userLogout(String refreshToken) {
+    public void userLogout(String refreshToken, String accessToken) {
+
+        Date expirationAccessDate = jwtService.extractExpiration(accessToken);
+        Date expirationRefreshDate = jwtService.extractExpiration(refreshToken);
+
+        long remainingTimeAccess = CalculateRemainingTime.calculateTime(expirationAccessDate);
+        long remainingTimeRefresh = CalculateRemainingTime.calculateTime(expirationRefreshDate);
+
+        jwtBlacklistService.saveBlackListJwt(accessToken, "access", Duration.ofMillis(remainingTimeAccess));
+        jwtBlacklistService.saveBlackListJwt(refreshToken, "refresh", Duration.ofMillis(remainingTimeRefresh));
+
         if(refreshToken.trim().isEmpty()){
             throw new BadCredentialsException("Refresh token is required for logout");
         }
