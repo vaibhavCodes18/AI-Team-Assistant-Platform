@@ -13,29 +13,31 @@ import com.ai_powered_app.ai_team_assistant_platform.entity.WorkspaceMember;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
+import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.WorkspaceRedisService;
 import com.ai_powered_app.ai_team_assistant_platform.repository.UserRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceMemberRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceRepository;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.WorkspaceService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class WorkspaceServiceImpl implements WorkspaceService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private WorkspaceRepository workspaceRepository;
+    private final WorkspaceRepository workspaceRepository;
 
-    @Autowired
-    private WorkspaceMemberRepository workspaceMemberRepository;
+    private final WorkspaceMemberRepository workspaceMemberRepository;
+
+    private final WorkspaceRedisService redisService;
 
 
     @Override
@@ -68,11 +70,18 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         User user = getAuthenticateUser();
 
-        Workspace workspace = workspaceRepository.findById(workspaceId).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
-
-        if(!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspace.getId(), user.getId())){
+        if(!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, user.getId())){
             throw new BadCredentialsException("You are not a member of this workspace");
         }
+
+        WorkspaceResponse cached = redisService.getRedisWorkspace(workspaceId);
+
+        if(cached != null) return cached;
+
+        Workspace workspace = workspaceRepository.findById(workspaceId).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
+
+
+        redisService.saveRedisWorkspace(workspaceId, getWorkspaceResponse(workspace), Duration.ofMinutes(30L));
 
         return getWorkspaceResponse(workspace);
 

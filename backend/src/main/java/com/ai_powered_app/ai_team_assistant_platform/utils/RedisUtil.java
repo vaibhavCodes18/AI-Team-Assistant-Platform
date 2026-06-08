@@ -9,4 +9,8 @@ public class RedisUtil {
         return "user-" + id;
     }
 
+    public static String getWorkspaceKey(Long id){
+        return "workspace-" + id;
+    }
+
 }
