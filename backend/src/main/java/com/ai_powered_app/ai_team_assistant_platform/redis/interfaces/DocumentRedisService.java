@@ -1,4 +1,4 @@
-package com.ai_powered_app.ai_team_assistant_platform.redis;
+package com.ai_powered_app.ai_team_assistant_platform.redis.interfaces;
 
 
 import java.time.Duration;

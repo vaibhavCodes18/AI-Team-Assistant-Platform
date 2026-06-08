@@ -3,7 +3,6 @@ package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.DocumentRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.DocumentResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.DocumentViewResponse;
-import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.*;
 import com.ai_powered_app.ai_team_assistant_platform.enums.ProcessingStatus;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
@@ -11,7 +10,7 @@ import com.ai_powered_app.ai_team_assistant_platform.exception.AccessDeniedExcep
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.event.DocumentUploadedEvent;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.producer.DocumentEventProducer;
-import com.ai_powered_app.ai_team_assistant_platform.redis.DocumentRedisService;
+import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.DocumentRedisService;
 import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.DocumentService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.FileStorageService;

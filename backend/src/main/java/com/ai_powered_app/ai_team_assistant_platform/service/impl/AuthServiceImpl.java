@@ -11,8 +11,10 @@ import com.ai_powered_app.ai_team_assistant_platform.enums.AuthProvider;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.DuplicateResourceException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
+import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.UserRedisService;
 import com.ai_powered_app.ai_team_assistant_platform.repository.RefreshTokenRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.UserRepository;
+import com.ai_powered_app.ai_team_assistant_platform.security.CustomUserDetails;
 import com.ai_powered_app.ai_team_assistant_platform.security.JWTService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -41,6 +45,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
+    private UserRedisService redisService;
 
     @Override
     public UserResponse userRegister(UserRegistrationRequest userRegistrationRequest) {
@@ -148,21 +155,24 @@ public class AuthServiceImpl implements AuthService {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        String userEmail = authentication.getName();
+        CustomUserDetails userDetails =
+                (CustomUserDetails)
+                        authentication.getPrincipal();
 
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
+        Long userId = userDetails.getId();
 
-        return UserResponse.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .name(user.getName())
-                .provider(user.getProvider())
-                .profileImage(user.getProfileImage())
-                .isActive(user.getIsActive())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
-                .build();
+        UserResponse cachedUser = redisService.getRedisUser(userId);
+
+        if(cachedUser != null) return cachedUser;
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with this id."));
+
+        UserResponse response = getUserResponse(user);
+
+        redisService.saveRedisUser(user.getId(), response, Duration.ofMinutes(10L));
+
+        return response;
     }
 
     private static UserResponse getUserResponse(User savedUser) {
