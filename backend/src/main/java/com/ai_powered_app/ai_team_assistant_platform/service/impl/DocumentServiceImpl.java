@@ -11,6 +11,7 @@ import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundE
 import com.ai_powered_app.ai_team_assistant_platform.kafka.event.DocumentUploadedEvent;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.producer.DocumentEventProducer;
 import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.DocumentRedisService;
+import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.SummaryRedisService;
 import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.DocumentService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.FileStorageService;
@@ -40,9 +41,8 @@ public class DocumentServiceImpl implements DocumentService {
 
         private final WorkspaceMemberRepository workspaceMemberRepository;
 
-        private final WorkspaceRepository workspaceRepository;
-
-        private final DocumentRedisService redisService;
+        private final SummaryRedisService redisSummaryService;
+        private final DocumentRedisService redisDocumentService;
 
         @Override
         public DocumentResponse uploadDocument(DocumentRequest documentRequest) {
@@ -112,12 +112,22 @@ public class DocumentServiceImpl implements DocumentService {
                 Document document = documentRepository.findById(documentId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
 
+
+                DocumentViewResponse response =
+                        mapToDocumentViewResponse(document);
+
                 if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(document.getWorkspace().getId(),
                                 currentUser.getId())) {
                         throw new AccessDeniedException("You are not a member of this workspace");
                 }
 
-                return mapToDocumentViewResponse(document);
+                DocumentViewResponse cached = redisDocumentService.getDocumentRedis(documentId);
+
+                if(cached != null) return cached;
+
+                redisDocumentService.saveDocumentRedis(documentId, response, Duration.ofMinutes(10L));
+
+                return response;
         }
 
         @Override
@@ -185,13 +195,13 @@ public class DocumentServiceImpl implements DocumentService {
                         throw new AccessDeniedException("You are not a member of this workspace");
                 }
 
-                String redisSummary = redisService.getSummaryRedis(documentId);
+                String redisSummary = redisSummaryService.getSummaryRedis(documentId);
 
                 if(redisSummary != null){
                         return redisSummary;
                 }
 
-                redisService.saveSummaryRedis(documentId, document.getSummary(), Duration.ofMinutes(10L));
+                redisSummaryService.saveSummaryRedis(documentId, document.getSummary(), Duration.ofMinutes(10L));
 
                 return document.getSummary();
         }

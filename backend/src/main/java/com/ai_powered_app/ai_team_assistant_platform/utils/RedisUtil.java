@@ -1,6 +1,10 @@
 package com.ai_powered_app.ai_team_assistant_platform.utils;
 
 public class RedisUtil {
+    public static String getSummaryKey(Long id){
+        return "summary-" + id;
+    }
+
     public static String getDocumentKey(Long id){
         return "document-" + id;
     }
