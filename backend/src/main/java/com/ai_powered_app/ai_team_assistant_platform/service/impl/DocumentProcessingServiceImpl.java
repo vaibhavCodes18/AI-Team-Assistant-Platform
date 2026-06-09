@@ -5,7 +5,7 @@ import com.ai_powered_app.ai_team_assistant_platform.enums.ProcessingStatus;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.SummaryRedisService;
 import com.ai_powered_app.ai_team_assistant_platform.repository.DocumentRepository;
-import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.AiSummaryService;
+import com.ai_powered_app.ai_team_assistant_platform.ai.interfaces.AiService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.DocumentProcessingService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TextExtractionService;
 import jakarta.transaction.Transactional;
@@ -25,7 +25,7 @@ public class DocumentProcessingServiceImpl implements DocumentProcessingService 
 
     private final TextExtractionService textExtractionService;
 
-    private final AiSummaryService aiSummaryService;
+    private final AiService aiSummaryService;
 
     private final SummaryRedisService redisService;
 
