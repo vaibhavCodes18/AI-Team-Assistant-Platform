@@ -1,12 +1,11 @@
 package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
-import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceRequest;
-import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceUpdateRequest;
-import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceMemberRequest;
-import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceRoleUpdateRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.*;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.ActivityLogResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceMemberResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
+import com.ai_powered_app.ai_team_assistant_platform.entity.ActivityLog;
 import com.ai_powered_app.ai_team_assistant_platform.entity.User;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Workspace;
 import com.ai_powered_app.ai_team_assistant_platform.entity.WorkspaceMember;
@@ -14,6 +13,7 @@ import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.WorkspaceRedisService;
+import com.ai_powered_app.ai_team_assistant_platform.repository.ActivityLogRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.UserRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceMemberRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceRepository;
@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +37,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     private final WorkspaceMemberRepository workspaceMemberRepository;
 
     private final WorkspaceRedisService redisService;
+
+    private final ActivityLogRepository activityLogRepository;
 
 
     @Override
@@ -119,25 +120,6 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         Workspace savedWorkspace = workspaceRepository.save(workspace);
         return getWorkspaceResponse(savedWorkspace);
-    }
-
-    private WorkspaceResponse getWorkspaceResponse(Workspace savedWorkspace) {
-        WorkspaceResponse response = new WorkspaceResponse();
-        response.setId(savedWorkspace.getId());
-        response.setName(savedWorkspace.getName());
-        response.setSlug(savedWorkspace.getSlug());
-        response.setDescription(savedWorkspace.getDescription());
-        response.setOwnerId(savedWorkspace.getOwner().getId());
-        response.setLogoUrl(savedWorkspace.getLogoUrl());
-        response.setIsActive(savedWorkspace.getIsActive());
-        response.setCreatedAt(savedWorkspace.getCreatedAt());
-        response.setUpdatedAt(savedWorkspace.getUpdatedAt());
-        return response;
-    }
-
-    private User getAuthenticateUser(){
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
     }
 
     @Override
@@ -241,7 +223,55 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         }
         
         List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspaceId);
-        return members.stream().map(this::getWorkspaceMemberResponse).collect(Collectors.toList());
+        return members.stream().map(this::getWorkspaceMemberResponse).toList();
+    }
+
+    @Override
+    public List<ActivityLogResponse> getWorkspaceActivityLogs(Long workspaceId) {
+        User currentUser = getAuthenticateUser();
+
+        WorkspaceMember currentMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+
+        if (currentMember.getRole() != WorkspaceRole.OWNER && currentMember.getRole() != WorkspaceRole.ADMIN) {
+            throw new BadCredentialsException("Only OWNER or ADMIN can access logs");
+        }
+
+        List<ActivityLog> activityLogs = activityLogRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId);
+
+        return activityLogs.stream().map(this::mapToActivityLogResponse).toList();
+    }
+
+    private ActivityLogResponse mapToActivityLogResponse(ActivityLog activityLog){
+        return ActivityLogResponse.builder()
+                .id(activityLog.getId())
+                .workspaceId(activityLog.getWorkspace().getId())
+                .userId(activityLog.getUser().getId())
+                .action(activityLog.getAction())
+                .entityType(activityLog.getEntityType())
+                .entityId(activityLog.getEntityId())
+                .metadata(activityLog.getMetadata())
+                .createdAt(activityLog.getCreatedAt())
+                .build();
+    }
+
+    private WorkspaceResponse getWorkspaceResponse(Workspace savedWorkspace) {
+        WorkspaceResponse response = new WorkspaceResponse();
+        response.setId(savedWorkspace.getId());
+        response.setName(savedWorkspace.getName());
+        response.setSlug(savedWorkspace.getSlug());
+        response.setDescription(savedWorkspace.getDescription());
+        response.setOwnerId(savedWorkspace.getOwner().getId());
+        response.setLogoUrl(savedWorkspace.getLogoUrl());
+        response.setIsActive(savedWorkspace.getIsActive());
+        response.setCreatedAt(savedWorkspace.getCreatedAt());
+        response.setUpdatedAt(savedWorkspace.getUpdatedAt());
+        return response;
+    }
+
+    private User getAuthenticateUser(){
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
     }
 
     private UserResponse getUserResponse(User user) {

@@ -1,9 +1,7 @@
 package com.ai_powered_app.ai_team_assistant_platform.service.interfaces;
 
-import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceRequest;
-import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceUpdateRequest;
-import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceMemberRequest;
-import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceRoleUpdateRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.*;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.ActivityLogResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceMemberResponse;
 import java.util.List;
@@ -17,4 +15,5 @@ public interface WorkspaceService {
     void removeMember(Long workspaceId, Long userId);
     WorkspaceMemberResponse updateMemberRole(Long workspaceId, Long userId, WorkspaceRoleUpdateRequest request);
     List<WorkspaceMemberResponse> getWorkspaceMembers(Long workspaceId);
+    List<ActivityLogResponse> getWorkspaceActivityLogs(Long workspaceId);
 }

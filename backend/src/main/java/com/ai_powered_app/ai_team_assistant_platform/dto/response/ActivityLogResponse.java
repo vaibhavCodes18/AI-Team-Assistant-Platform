@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class ActivityLogResponse {
     private Long id;
     private Long workspaceId;
-    private UserResponse user;
+    private Long userId;
     private String action;
     private String entityType;
     private Long entityId;

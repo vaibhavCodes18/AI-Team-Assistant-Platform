@@ -4,6 +4,7 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceReques
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceUpdateRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceMemberRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.WorkspaceRoleUpdateRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.ActivityLogResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceMemberResponse;
 import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
@@ -86,6 +87,14 @@ public class WorkspaceController {
             @PathVariable("id") Long id) {
         List<WorkspaceMemberResponse> response = workspaceService.getWorkspaceMembers(id);
         ApiResponse<List<WorkspaceMemberResponse>> apiRes = new ApiResponse<>(200, "Members Fetched", response);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
+
+    @GetMapping("/{workspaceId}/activities")
+    public ResponseEntity<ApiResponse<List<ActivityLogResponse>>> getActivityLogs(
+            @PathVariable("workspaceId") Long workspaceId) {
+        List<ActivityLogResponse> response = workspaceService.getWorkspaceActivityLogs(workspaceId);
+        ApiResponse<List<ActivityLogResponse>> apiRes = new ApiResponse<>(200, "Activity logs Fetched", response);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 }
