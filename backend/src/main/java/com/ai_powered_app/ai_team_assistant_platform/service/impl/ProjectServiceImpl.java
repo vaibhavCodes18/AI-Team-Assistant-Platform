@@ -7,18 +7,25 @@ import com.ai_powered_app.ai_team_assistant_platform.entity.Project;
 import com.ai_powered_app.ai_team_assistant_platform.entity.User;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Workspace;
 import com.ai_powered_app.ai_team_assistant_platform.entity.WorkspaceMember;
+import com.ai_powered_app.ai_team_assistant_platform.entity.ActivityLog;
+import com.ai_powered_app.ai_team_assistant_platform.entity.Notification;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
+import com.ai_powered_app.ai_team_assistant_platform.enums.NotificationType;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.repository.ProjectRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.UserRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceMemberRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceRepository;
+import com.ai_powered_app.ai_team_assistant_platform.repository.ActivityLogRepository;
+import com.ai_powered_app.ai_team_assistant_platform.repository.NotificationRepository;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.ProjectService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,7 +44,14 @@ public class ProjectServiceImpl implements ProjectService {
     @Autowired
     private ProjectRepository projectRepository;
 
+    @Autowired
+    private ActivityLogRepository activityLogRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
     @Override
+    @Transactional
     public ProjectResponse createProject(ProjectRequest projectRequest) {
 
         User currentUser = getAuthenticateUser();
@@ -53,6 +67,32 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project project = setProject(projectRequest, workspace, currentUser);
         Project savedProject = projectRepository.save(project);
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(workspace);
+        activityLog.setUser(currentUser);
+        activityLog.setAction("PROJECT_CREATED");
+        activityLog.setEntityType("PROJECT");
+        activityLog.setEntityId(savedProject.getId());
+        activityLog.setMetadata(currentUser.getName() + " created project " + savedProject.getName());
+        activityLogRepository.save(activityLog);
+
+        List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspace.getId());
+        List<Notification> notifications = new ArrayList<>();
+        for (WorkspaceMember workspaceMember : members) {
+            if (!workspaceMember.getUser().getId().equals(currentUser.getId())) {
+                Notification notification = new Notification();
+                notification.setUser(workspaceMember.getUser());
+                notification.setTitle("New Project Created");
+                notification.setMessage("A new project '" + savedProject.getName() + "' has been created in workspace " + workspace.getName() + " by " + currentUser.getName());
+                notification.setType(NotificationType.PROJECT_CREATED);
+                notification.setIsRead(false);
+                notifications.add(notification);
+            }
+        }
+        if (!notifications.isEmpty()) {
+            notificationRepository.saveAll(notifications);
+        }
 
         return getProjectResponse(savedProject);
     }
@@ -85,6 +125,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional
     public ProjectResponse updateProject(Long projectId, UpdateProjectRequest updateProjectRequest) {
         User currentUser = getAuthenticateUser();
 
@@ -114,10 +155,20 @@ public class ProjectServiceImpl implements ProjectService {
         }
         Project updatedProject = projectRepository.save(project);
 
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(updatedProject.getWorkspace());
+        activityLog.setUser(currentUser);
+        activityLog.setAction("PROJECT_UPDATED");
+        activityLog.setEntityType("PROJECT");
+        activityLog.setEntityId(updatedProject.getId());
+        activityLog.setMetadata(currentUser.getName() + " updated project " + updatedProject.getName());
+        activityLogRepository.save(activityLog);
+
         return getProjectResponse(updatedProject);
     }
 
     @Override
+    @Transactional
     public void deleteProject(Long projectId) {
         User currentUser = getAuthenticateUser();
 
@@ -127,8 +178,17 @@ public class ProjectServiceImpl implements ProjectService {
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
         if(member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN){
-            throw new BadCredentialsException("Only OWNER or ADMIN can update project");
+            throw new BadCredentialsException("Only OWNER or ADMIN can delete project");
         }
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(project.getWorkspace());
+        activityLog.setUser(currentUser);
+        activityLog.setAction("PROJECT_DELETED");
+        activityLog.setEntityType("PROJECT");
+        activityLog.setEntityId(project.getId());
+        activityLog.setMetadata(currentUser.getName() + " deleted project " + project.getName());
+        activityLogRepository.save(activityLog);
 
         projectRepository.delete(project);
     }

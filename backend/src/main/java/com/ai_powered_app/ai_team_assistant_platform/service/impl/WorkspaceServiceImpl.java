@@ -5,25 +5,23 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.ActivityLogRes
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceMemberResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
-import com.ai_powered_app.ai_team_assistant_platform.entity.ActivityLog;
-import com.ai_powered_app.ai_team_assistant_platform.entity.User;
-import com.ai_powered_app.ai_team_assistant_platform.entity.Workspace;
-import com.ai_powered_app.ai_team_assistant_platform.entity.WorkspaceMember;
+import com.ai_powered_app.ai_team_assistant_platform.entity.*;
+import com.ai_powered_app.ai_team_assistant_platform.enums.NotificationType;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.WorkspaceRedisService;
-import com.ai_powered_app.ai_team_assistant_platform.repository.ActivityLogRepository;
-import com.ai_powered_app.ai_team_assistant_platform.repository.UserRepository;
-import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceMemberRepository;
-import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceRepository;
+import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.WorkspaceService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 @Service
@@ -40,15 +38,18 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
     private final ActivityLogRepository activityLogRepository;
 
+    private final NotificationRepository notificationRepository;
 
     @Override
     public WorkspaceResponse createWorkspace(WorkspaceRequest workspaceRequest) {
+
+        User currentUser = getAuthenticateUser();
 
         Workspace workspace = new Workspace();
         workspace.setName(workspaceRequest.getName());
         workspace.setSlug(workspaceRequest.getSlug());
         workspace.setDescription(workspaceRequest.getDescription());
-        workspace.setOwner(getAuthenticateUser());
+        workspace.setOwner(currentUser);
         workspace.setLogoUrl(workspaceRequest.getLogoUrl());
         workspace.setIsActive(true);
 
@@ -62,6 +63,16 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         workspaceMember.setJoinedAt(LocalDateTime.now());
 
         workspaceMemberRepository.save(workspaceMember);
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(savedWorkspace);
+        activityLog.setUser(currentUser);
+        activityLog.setAction("WORKSPACE_CREATED");
+        activityLog.setEntityType("WORKSPACE");
+        activityLog.setEntityId(savedWorkspace.getId());
+        activityLog.setMetadata(currentUser.getName() + " created workspace " + savedWorkspace.getName());
+
+        activityLogRepository.save(activityLog);
 
         return getWorkspaceResponse(savedWorkspace);
     }
@@ -117,31 +128,69 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         if (request.getIsActive() != null) {
             workspace.setIsActive(request.getIsActive());
         }
-
         Workspace savedWorkspace = workspaceRepository.save(workspace);
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(savedWorkspace);
+        activityLog.setUser(user);
+        activityLog.setAction("WORKSPACE_UPDATED");
+        activityLog.setEntityType("WORKSPACE");
+        activityLog.setEntityId(savedWorkspace.getId());
+        activityLog.setMetadata("Workspace details updated");
+
+        activityLogRepository.save(activityLog);
+
         return getWorkspaceResponse(savedWorkspace);
     }
 
     @Override
+    @Transactional
     public void deleteWorkspace(Long workspaceId) {
         User user = getAuthenticateUser();
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
                 
-        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, user.getId())
+        WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, user.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
                 
-        if (member.getRole() != WorkspaceRole.OWNER) {
+        if (workspaceMember.getRole() != WorkspaceRole.OWNER) {
             throw new BadCredentialsException("Only the OWNER can delete the workspace");
         }
         
         List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspaceId);
         workspaceMemberRepository.deleteAll(members);
-        
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(workspace);
+        activityLog.setUser(user);
+        activityLog.setAction("WORKSPACE_DELETED");
+        activityLog.setEntityType("WORKSPACE");
+        activityLog.setEntityId(workspace.getId());
+        activityLog.setMetadata("Workspace deleted");
+
+        List<Notification> notifications = new ArrayList<>();
+
+        for (WorkspaceMember member : members) {
+            Notification notification = new Notification();
+
+            notification.setUser(member.getUser());
+            notification.setTitle("Workspace Deleted");
+            notification.setMessage(workspace.getName()
+                    + " has been deleted by "
+                    + user.getName());
+            notification.setType(NotificationType.WORKSPACE_DELETED);
+            notification.setIsRead(false);
+
+            notifications.add(notification);
+        }
+
+        notificationRepository.saveAll(notifications);
+
         workspaceRepository.delete(workspace);
     }
     
     @Override
+    @Transactional
     public WorkspaceMemberResponse inviteMember(Long workspaceId, WorkspaceMemberRequest request) {
         User currentUser = getAuthenticateUser();
         
@@ -170,10 +219,30 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         newMember.setJoinedAt(LocalDateTime.now());
         
         WorkspaceMember savedMember = workspaceMemberRepository.save(newMember);
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(workspace);
+        activityLog.setUser(currentUser);
+        activityLog.setAction("MEMBER_INVITED");
+        activityLog.setEntityType("WORKSPACE_MEMBER");
+        activityLog.setEntityId(savedMember.getId());
+        activityLog.setMetadata(currentUser.getName() + " added " + userToInvite.getName() + " as "+ request.getRole());
+        activityLogRepository.save(activityLog);
+
+        Notification notification = new Notification();
+
+        notification.setUser(savedMember.getUser());
+        notification.setTitle("Member invited");
+        notification.setMessage("You have been added to " + workspace.getName() + " workspace.");
+        notification.setType(NotificationType.WORKSPACE_INVITED);
+        notification.setIsRead(false);
+        notificationRepository.save(notification);
+
         return getWorkspaceMemberResponse(savedMember);
     }
     
     @Override
+    @Transactional
     public void removeMember(Long workspaceId, Long userId) {
         User currentUser = getAuthenticateUser();
         
@@ -190,11 +259,32 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         if (memberToRemove.getRole() == WorkspaceRole.OWNER && currentMember.getRole() != WorkspaceRole.OWNER) {
             throw new BadCredentialsException("ADMIN cannot remove an OWNER");
         }
-        
+
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(currentMember.getWorkspace());
+        activityLog.setUser(currentUser);
+        activityLog.setAction("MEMBER_REMOVED");
+        activityLog.setEntityType("WORKSPACE_MEMBER");
+        activityLog.setEntityId(memberToRemove.getId());
+        activityLog.setMetadata(memberToRemove.getUser().getName() + " removed by " + currentUser.getName());
+        activityLogRepository.save(activityLog);
+
+        Notification notification = new Notification();
+
+        notification.setUser(memberToRemove.getUser());
+        notification.setTitle("Member removed");
+        notification.setMessage("You have been removed from workspace " + currentMember.getWorkspace().getName() + " by " + currentUser.getName());
+        notification.setType(NotificationType.MEMBER_REMOVED);
+        notification.setIsRead(false);
+        notificationRepository.save(notification);
+
+
         workspaceMemberRepository.delete(memberToRemove);
     }
     
     @Override
+    @Transactional
     public WorkspaceMemberResponse updateMemberRole(Long workspaceId, Long userId, WorkspaceRoleUpdateRequest request) {
         User currentUser = getAuthenticateUser();
         
@@ -210,7 +300,25 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 
         memberToUpdate.setRole(request.getRole());
         WorkspaceMember updatedMember = workspaceMemberRepository.save(memberToUpdate);
-        
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(currentMember.getWorkspace());
+        activityLog.setUser(currentUser);
+        activityLog.setAction("MEMBER_ROLE_CHANGED");
+        activityLog.setEntityType("WORKSPACE_MEMBER");
+        activityLog.setEntityId(updatedMember.getId());
+        activityLog.setMetadata(updatedMember.getUser().getName() + " role changed by " + currentUser.getName() + " to " + request.getRole());
+        activityLogRepository.save(activityLog);
+
+        Notification notification = new Notification();
+
+        notification.setUser(updatedMember.getUser());
+        notification.setTitle("Member role changed");
+        notification.setMessage("Your role has changed to " + request.getRole());
+        notification.setType(NotificationType.MEMBER_ROLE_CHANGED);
+        notification.setIsRead(false);
+        notificationRepository.save(notification);
+
         return getWorkspaceMemberResponse(updatedMember);
     }
     

@@ -38,11 +38,11 @@ public class WorkspaceController {
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{workspaceId}")
     public ResponseEntity<ApiResponse<WorkspaceResponse>> updateWorkspace(
-            @PathVariable("id") Long id,
+            @PathVariable("workspaceId") Long workspaceId,
             @Valid @RequestBody WorkspaceUpdateRequest workspaceUpdateRequest) {
-        WorkspaceResponse response = workspaceService.updateWorkspace(id, workspaceUpdateRequest);
+        WorkspaceResponse response = workspaceService.updateWorkspace(workspaceId, workspaceUpdateRequest);
         ApiResponse<WorkspaceResponse> apiRes = new ApiResponse<>(200, "Workspace Updated", response);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }

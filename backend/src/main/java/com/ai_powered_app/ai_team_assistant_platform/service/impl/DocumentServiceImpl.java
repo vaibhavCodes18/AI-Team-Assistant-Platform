@@ -15,6 +15,7 @@ import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.SummaryRed
 import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.DocumentService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.FileStorageService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -43,8 +44,10 @@ public class DocumentServiceImpl implements DocumentService {
 
         private final SummaryRedisService redisSummaryService;
         private final DocumentRedisService redisDocumentService;
+        private final ActivityLogRepository activityLogRepository;
 
         @Override
+        @Transactional
         public DocumentResponse uploadDocument(DocumentRequest documentRequest) {
                 User currentUser = getAuthenticateUser();
 
@@ -81,6 +84,15 @@ public class DocumentServiceImpl implements DocumentService {
                                 ProcessingStatus.UPLOADED);
 
                 Document savedDocument = documentRepository.save(document);
+
+                ActivityLog activityLog = new ActivityLog();
+                activityLog.setWorkspace(project.getWorkspace());
+                activityLog.setUser(currentUser);
+                activityLog.setAction("DOCUMENT_UPLOADED");
+                activityLog.setEntityType("DOCUMENT");
+                activityLog.setEntityId(savedDocument.getId());
+                activityLog.setMetadata(currentUser.getName() + " uploaded document '" + savedDocument.getTitle() + "'");
+                activityLogRepository.save(activityLog);
 
                 DocumentUploadedEvent event = DocumentUploadedEvent.builder()
                                 .documentId(
@@ -159,6 +171,7 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         @Override
+        @Transactional
         public void deleteDocument(Long documentId) {
                 User currentUser = getAuthenticateUser();
 
@@ -172,6 +185,15 @@ public class DocumentServiceImpl implements DocumentService {
                 if (member.getRole() != WorkspaceRole.ADMIN && member.getRole() != WorkspaceRole.OWNER) {
                         throw new AccessDeniedException("Only OWNER or ADMIN can delete document");
                 }
+
+                ActivityLog activityLog = new ActivityLog();
+                activityLog.setWorkspace(document.getWorkspace());
+                activityLog.setUser(currentUser);
+                activityLog.setAction("DOCUMENT_DELETED");
+                activityLog.setEntityType("DOCUMENT");
+                activityLog.setEntityId(document.getId());
+                activityLog.setMetadata(currentUser.getName() + " deleted document '" + document.getTitle() + "'");
+                activityLogRepository.save(activityLog);
 
                 try {
                         fileStorageService.deleteFile(document.getStoragePath());

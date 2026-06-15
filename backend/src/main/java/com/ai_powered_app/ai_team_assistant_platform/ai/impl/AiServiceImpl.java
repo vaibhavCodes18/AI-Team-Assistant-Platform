@@ -3,6 +3,7 @@ package com.ai_powered_app.ai_team_assistant_platform.ai.impl;
 import com.ai_powered_app.ai_team_assistant_platform.ai.interfaces.AiService;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.GenerateDocsResponse;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
+import com.ai_powered_app.ai_team_assistant_platform.repository.ActivityLogRepository;
 import com.ai_powered_app.ai_team_assistant_platform.utils.AiPrompt;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 public class AiServiceImpl implements AiService {
     private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
+    private final ActivityLogRepository activityLogRepository;
 
     @Override
     public String generateSummary(String content) {

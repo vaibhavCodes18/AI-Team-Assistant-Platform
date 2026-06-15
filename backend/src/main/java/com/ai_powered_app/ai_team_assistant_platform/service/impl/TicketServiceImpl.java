@@ -7,12 +7,14 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketCommentR
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.*;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
+import com.ai_powered_app.ai_team_assistant_platform.enums.NotificationType;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.event.TicketCreatedEvent;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.producer.TicketEventProducer;
 import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TicketService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -43,7 +45,14 @@ public class TicketServiceImpl implements TicketService {
     @Autowired
     private TicketCommentRepository ticketCommentRepository;
 
+    @Autowired
+    private ActivityLogRepository activityLogRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
     @Override
+    @Transactional
     public TicketResponse createTicket(TicketRequest ticketRequest) {
 
         User currentUser = getAuthenticateUser();
@@ -72,6 +81,15 @@ public class TicketServiceImpl implements TicketService {
         ticket.setDueDate(ticketRequest.getDueDate());
 
         Ticket savedTicket = ticketRepository.save(ticket);
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(project.getWorkspace());
+        activityLog.setUser(currentUser);
+        activityLog.setAction("TICKET_CREATED");
+        activityLog.setEntityType("TICKET");
+        activityLog.setEntityId(savedTicket.getId());
+        activityLog.setMetadata(currentUser.getName() + " created ticket '" + savedTicket.getTitle() + "'");
+        activityLogRepository.save(activityLog);
 
         TicketCreatedEvent event =
                 TicketCreatedEvent.builder()
@@ -117,6 +135,7 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Transactional
     public TicketResponse updateTicket(Long ticketId, TicketUpdateRequest ticketUpdateRequest) {
 
         User currentUser = getAuthenticateUser();
@@ -131,8 +150,11 @@ public class TicketServiceImpl implements TicketService {
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
         if (member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN && member.getRole() != WorkspaceRole.MEMBER) {
-            throw new BadCredentialsException("You do not have permission to create this ticket");
+            throw new BadCredentialsException("You do not have permission to update this ticket");
         }
+
+        User oldAssignee = ticket.getAssignee();
+        User newAssignee = null;
 
         if(ticketUpdateRequest.getTitle() != null){
             ticket.setTitle(ticketUpdateRequest.getTitle());
@@ -147,17 +169,39 @@ public class TicketServiceImpl implements TicketService {
             ticket.setPriority(ticketUpdateRequest.getPriority());
         }
         if(ticketUpdateRequest.getAssigneeEmail() != null){
-            User assignee = userRepository.findByEmail(ticketUpdateRequest.getAssigneeEmail()).orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
-            ticket.setAssignee(assignee);
+            newAssignee = userRepository.findByEmail(ticketUpdateRequest.getAssigneeEmail()).orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
+            ticket.setAssignee(newAssignee);
         }
         if(ticketUpdateRequest.getDueDate() != null){
             ticket.setDueDate(ticketUpdateRequest.getDueDate());
         }
 
-        return mapToTicketResponse(ticketRepository.save(ticket));
+        Ticket updatedTicket = ticketRepository.save(ticket);
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(project.getWorkspace());
+        activityLog.setUser(currentUser);
+        activityLog.setAction("TICKET_UPDATED");
+        activityLog.setEntityType("TICKET");
+        activityLog.setEntityId(updatedTicket.getId());
+        activityLog.setMetadata(currentUser.getName() + " updated ticket '" + updatedTicket.getTitle() + "'");
+        activityLogRepository.save(activityLog);
+
+        if (newAssignee != null && (oldAssignee == null || !oldAssignee.getId().equals(newAssignee.getId()))) {
+            Notification notification = new Notification();
+            notification.setUser(newAssignee);
+            notification.setTitle("Ticket Assigned");
+            notification.setMessage("You have been assigned ticket: " + updatedTicket.getTitle());
+            notification.setType(NotificationType.TICKET_ASSIGNED);
+            notification.setIsRead(false);
+            notificationRepository.save(notification);
+        }
+
+        return mapToTicketResponse(updatedTicket);
     }
 
     @Override
+    @Transactional
     public TicketCommentResponse addTicketComment(Long ticketId, TicketCommentRequest ticketCommentRequest) {
 
         User currentUser = getAuthenticateUser();
@@ -180,10 +224,22 @@ public class TicketServiceImpl implements TicketService {
         ticketComment.setUser(currentUser);
         ticketComment.setContent(ticketCommentRequest.getContent());
 
-        return mapToTicketCommentResponse(ticketCommentRepository.save(ticketComment));
+        TicketComment savedComment = ticketCommentRepository.save(ticketComment);
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(project.getWorkspace());
+        activityLog.setUser(currentUser);
+        activityLog.setAction("TICKET_COMMENT_ADDED");
+        activityLog.setEntityType("TICKET_COMMENT");
+        activityLog.setEntityId(savedComment.getId());
+        activityLog.setMetadata(currentUser.getName() + " commented on ticket '" + ticket.getTitle() + "'");
+        activityLogRepository.save(activityLog);
+
+        return mapToTicketCommentResponse(savedComment);
     }
 
     @Override
+    @Transactional
     public void deleteTicket(Long ticketId) {
         User currentUser = getAuthenticateUser();
 
@@ -199,6 +255,15 @@ public class TicketServiceImpl implements TicketService {
         if (member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN ) {
             throw new BadCredentialsException("You do not have permission to delete this ticket");
         }
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(project.getWorkspace());
+        activityLog.setUser(currentUser);
+        activityLog.setAction("TICKET_DELETED");
+        activityLog.setEntityType("TICKET");
+        activityLog.setEntityId(ticket.getId());
+        activityLog.setMetadata(currentUser.getName() + " deleted ticket '" + ticket.getTitle() + "'");
+        activityLogRepository.save(activityLog);
 
         List<TicketComment> ticketComments = ticketCommentRepository.findByTicketIdOrderByCreatedAtAsc(ticketId);
         ticketCommentRepository.deleteAll(ticketComments);
@@ -225,7 +290,7 @@ public class TicketServiceImpl implements TicketService {
                 .description(ticket.getDescription())
                 .status(ticket.getStatus())
                 .priority(ticket.getPriority())
-                .assigneeId(ticket.getAssignee().getId())
+                .assigneeId(ticket.getAssignee() != null ? ticket.getAssignee().getId() : null)
                 .createdById(ticket.getCreatedBy().getId())
                 .dueDate(ticket.getDueDate())
                 .aiSummary(ticket.getAiSummary())
