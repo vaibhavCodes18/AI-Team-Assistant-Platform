@@ -8,6 +8,7 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.RefreshToken;
 import com.ai_powered_app.ai_team_assistant_platform.entity.User;
 import com.ai_powered_app.ai_team_assistant_platform.enums.AuthProvider;
+import com.ai_powered_app.ai_team_assistant_platform.enums.PlatformRole;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.DuplicateResourceException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
@@ -68,6 +69,7 @@ public class AuthServiceImpl implements AuthService {
         user.setEmail(userRegistrationRequest.getEmail());
         user.setName(userRegistrationRequest.getName());
         user.setPassword(passwordEncoder.encode(userRegistrationRequest.getPassword()));
+        user.setPlatformRole(PlatformRole.USER);
         user.setProvider(AuthProvider.LOCAL);
         User savedUser = userRepository.save(user);
 
@@ -199,6 +201,7 @@ public class AuthServiceImpl implements AuthService {
         userResponse.setEmail(savedUser.getEmail());
         userResponse.setProvider(savedUser.getProvider());
         userResponse.setProfileImage(savedUser.getProfileImage());
+        userResponse.setPlatformRole(savedUser.getPlatformRole());
         userResponse.setIsActive(savedUser.getIsActive());
         userResponse.setCreatedAt(savedUser.getCreatedAt());
         userResponse.setUpdatedAt(savedUser.getUpdatedAt());

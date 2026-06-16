@@ -1,6 +1,7 @@
 package com.ai_powered_app.ai_team_assistant_platform.entity;
 
 import com.ai_powered_app.ai_team_assistant_platform.enums.AuthProvider;
+import com.ai_powered_app.ai_team_assistant_platform.enums.PlatformRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,6 +22,9 @@ public class User extends BaseEntity{
     private String email;
 
     private String password;
+
+    @Enumerated(EnumType.STRING)
+    private PlatformRole platformRole = PlatformRole.USER;
 
     @Enumerated(EnumType.STRING)
     private AuthProvider provider;
