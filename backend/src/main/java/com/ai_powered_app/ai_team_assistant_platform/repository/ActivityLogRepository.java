@@ -16,4 +16,6 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
     List<ActivityLog> findByWorkspaceIdAndUserId(Long workspaceId, Long userId);
 
     List<ActivityLog> findByEntityTypeAndEntityId(String entityType, Long entityId);
+
+    List<ActivityLog> findByEntityTypeAndEntityIdOrderByCreatedAtDesc(String entityType, Long entityId);
 }

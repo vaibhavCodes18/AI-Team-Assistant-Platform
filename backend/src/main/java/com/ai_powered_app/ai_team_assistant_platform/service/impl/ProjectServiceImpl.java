@@ -82,7 +82,7 @@ public class ProjectServiceImpl implements ProjectService {
         for (WorkspaceMember workspaceMember : members) {
             if (!workspaceMember.getUser().getId().equals(currentUser.getId())) {
                 Notification notification = new Notification();
-                notification.setUser(workspaceMember.getUser());
+                notification.setRecipient(workspaceMember.getUser());
                 notification.setTitle("New Project Created");
                 notification.setMessage("A new project '" + savedProject.getName() + "' has been created in workspace " + workspace.getName() + " by " + currentUser.getName());
                 notification.setType(NotificationType.PROJECT_CREATED);

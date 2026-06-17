@@ -19,6 +19,10 @@ public class RedisUtil {
         return "workspace-" + id;
     }
 
+    public static String getTaskKey(Long id){
+        return "task-" + id;
+    }
+
     public static String getBlacklistKey(String type, String token){
         return "blacklist-"+ type + "-" + token;
     }

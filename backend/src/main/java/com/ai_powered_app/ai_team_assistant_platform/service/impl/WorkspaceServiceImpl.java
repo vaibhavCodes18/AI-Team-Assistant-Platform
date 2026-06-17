@@ -173,7 +173,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         for (WorkspaceMember member : members) {
             Notification notification = new Notification();
 
-            notification.setUser(member.getUser());
+            notification.setRecipient(member.getUser());
             notification.setTitle("Workspace Deleted");
             notification.setMessage(workspace.getName()
                     + " has been deleted by "
@@ -231,10 +231,10 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         Notification notification = new Notification();
 
-        notification.setUser(savedMember.getUser());
+        notification.setRecipient(savedMember.getUser());
         notification.setTitle("Member invited");
         notification.setMessage("You have been added to " + workspace.getName() + " workspace.");
-        notification.setType(NotificationType.WORKSPACE_INVITED);
+        notification.setType(NotificationType.MEMBER_INVITED);
         notification.setIsRead(false);
         notificationRepository.save(notification);
 
@@ -272,7 +272,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         Notification notification = new Notification();
 
-        notification.setUser(memberToRemove.getUser());
+        notification.setRecipient(memberToRemove.getUser());
         notification.setTitle("Member removed");
         notification.setMessage("You have been removed from workspace " + currentMember.getWorkspace().getName() + " by " + currentUser.getName());
         notification.setType(NotificationType.MEMBER_REMOVED);
@@ -312,10 +312,10 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         Notification notification = new Notification();
 
-        notification.setUser(updatedMember.getUser());
+        notification.setRecipient(updatedMember.getUser());
         notification.setTitle("Member role changed");
         notification.setMessage("Your role has changed to " + request.getRole());
-        notification.setType(NotificationType.MEMBER_ROLE_CHANGED);
+        notification.setType(NotificationType.MEMBER_ROLE_UPDATED);
         notification.setIsRead(false);
         notificationRepository.save(notification);
 

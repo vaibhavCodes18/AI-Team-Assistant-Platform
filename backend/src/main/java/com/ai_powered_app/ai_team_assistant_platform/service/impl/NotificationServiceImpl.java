@@ -1,5 +1,6 @@
 package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.NotificationRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.NotificationResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Notification;
 import com.ai_powered_app.ai_team_assistant_platform.entity.User;
@@ -37,7 +38,7 @@ public class NotificationServiceImpl implements NotificationService {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + notificationId));
 
-        if (!notification.getUser().getId().equals(currentUser.getId())) {
+        if (!notification.getRecipient().getId().equals(currentUser.getId())) {
             throw new ResourceNotFoundException("Notification not found with id: " + notificationId);
         }
 
@@ -53,17 +54,28 @@ public class NotificationServiceImpl implements NotificationService {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + notificationId));
 
-        if (!notification.getUser().getId().equals(currentUser.getId())) {
+        if (!notification.getRecipient().getId().equals(currentUser.getId())) {
             throw new ResourceNotFoundException("Notification not found with id: " + notificationId);
         }
 
         notificationRepository.delete(notification);
     }
 
+    @Override
+    public void sendNotification(NotificationRequest request) {
+        Notification notification = new Notification();
+        notification.setRecipient(request.getRecipient());
+        notification.setTitle(request.getTitle());
+        notification.setMessage(request.getMessage());
+        notification.setType(request.getType());
+
+        notificationRepository.save(notification);
+    }
+
     private NotificationResponse mapToNotificationResponse(Notification notification){
         return NotificationResponse.builder()
                 .id(notification.getId())
-                .userId(notification.getUser().getId())
+                .userId(notification.getRecipient().getId())
                 .title(notification.getTitle())
                 .message(notification.getMessage())
                 .type(notification.getType().name())

@@ -189,7 +189,7 @@ public class TicketServiceImpl implements TicketService {
 
         if (newAssignee != null && (oldAssignee == null || !oldAssignee.getId().equals(newAssignee.getId()))) {
             Notification notification = new Notification();
-            notification.setUser(newAssignee);
+            notification.setRecipient(newAssignee);
             notification.setTitle("Ticket Assigned");
             notification.setMessage("You have been assigned ticket: " + updatedTicket.getTitle());
             notification.setType(NotificationType.TICKET_ASSIGNED);

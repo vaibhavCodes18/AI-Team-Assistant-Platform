@@ -49,7 +49,7 @@ public class NotificationConsumer {
 
         Notification notification = new Notification();
 
-        notification.setUser(assignee);
+        notification.setRecipient(assignee);
 
         notification.setTitle(
                 "Ticket Assigned"

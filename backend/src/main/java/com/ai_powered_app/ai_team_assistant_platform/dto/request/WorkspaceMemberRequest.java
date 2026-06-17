@@ -2,7 +2,6 @@ package com.ai_powered_app.ai_team_assistant_platform.dto.request;
 
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
