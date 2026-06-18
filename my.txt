@@ -20,3 +20,12 @@ ai-team-assistant-platform
 ├── .env
 └── docker-compose.yml
 
+src/
+    components/
+        landing/
+            Navbar.jsx
+            Hero.jsx
+            Features.jsx
+            CTA.jsx
+            Footer.jsx
+

@@ -1,3 +1,93 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+      .glass-card {
+        background: rgba(13, 17, 28, 0.7);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .shimmer-text {
+        background: linear-gradient(
+          90deg,
+          #e9d5ff 0%,
+          #ffffff 50%,
+          #e9d5ff 100%
+        );
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: shimmer 4s linear infinite;
+      }
+      @keyframes shimmer {
+        to {
+          background-position: 200% center;
+        }
+      }
+      .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 24px;
+      }
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      
+      /* Grid background with glowing dots */
+      .bg-grid-glow {
+        background-image: 
+          radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 80%),
+          radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        background-size: 100% 100%, 24px 24px;
+      }
+
+      /* Premium Card Glow hover effects */
+      .glow-card-hover {
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .glow-card-hover:hover {
+        transform: translateY(-4px);
+        border-color: rgba(139, 92, 246, 0.3);
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 0 0 20px 2px rgba(139, 92, 246, 0.08);
+      }
+
+      /* Glowing custom neon spheres */
+      .neon-glow-cyan {
+        box-shadow: 0 0 100px 30px rgba(6, 182, 212, 0.15);
+      }
+      .neon-glow-violet {
+        box-shadow: 0 0 100px 30px rgba(139, 92, 246, 0.15);
+      }
+      .neon-glow-indigo {
+        box-shadow: 0 0 100px 30px rgba(99, 102, 241, 0.15);
+      }
+
+      /* Cursor blink animation for terminal */
+      .terminal-cursor::after {
+        content: '▋';
+        animation: blink 1s step-start infinite;
+      }
+      @keyframes blink {
+        50% { opacity: 0; }
+      }
+
+      /* Custom scrollbar for dark mode terminal */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }

@@ -1,0 +1,645 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AI Team Assistant Platform | Multi-Workspace Collaboration & Project Management</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-secondary-container": "#a9bad3",
+              "secondary-container": "#3a4a5f",
+              "on-secondary-fixed-variant": "#38485d",
+              "on-primary-fixed": "#00174b",
+              "on-tertiary": "#581e00",
+              surface: "#11131b",
+              "tertiary-container": "#bc4800",
+              "surface-container-lowest": "#0c0e16",
+              "tertiary-fixed": "#ffdbcd",
+              "surface-container-high": "#282a32",
+              "error-container": "#93000a",
+              "surface-container": "#1d1f27",
+              "primary-fixed-dim": "#b4c5ff",
+              "on-tertiary-fixed-variant": "#7d2d00",
+              "surface-variant": "#32343d",
+              "on-error": "#690005",
+              "on-surface-variant": "#c3c6d7",
+              outline: "#8d90a0",
+              "on-tertiary-fixed": "#360f00",
+              "primary-fixed": "#dbe1ff",
+              "on-secondary": "#213145",
+              "on-background": "#e1e2ed",
+              "primary-container": "#2563eb",
+              tertiary: "#ffb596",
+              "secondary-fixed": "#d3e4fe",
+              "surface-container-low": "#191b23",
+              background: "#11131b",
+              "on-primary-container": "#eeefff",
+              "surface-bright": "#373942",
+              "on-surface": "#e1e2ed",
+              "inverse-on-surface": "#2e3039",
+              "surface-container-highest": "#32343d",
+              "inverse-primary": "#0053db",
+              "on-primary-fixed-variant": "#003ea8",
+              "on-error-container": "#ffdad6",
+              "surface-dim": "#11131b",
+              error: "#ffb4ab",
+              "secondary-fixed-dim": "#b7c8e1",
+              primary: "#b4c5ff",
+              "inverse-surface": "#e1e2ed",
+              "on-tertiary-container": "#ffede6",
+              "surface-tint": "#b4c5ff",
+              "on-primary": "#002a78",
+              "outline-variant": "#434655",
+              "on-secondary-fixed": "#0b1c30",
+              "tertiary-fixed-dim": "#ffb596",
+              secondary: "#b7c8e1",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+            spacing: {
+              xl: "32px",
+              sm: "8px",
+              md: "16px",
+              lg: "24px",
+              "container-max": "1280px",
+              "2xl": "48px",
+              gutter: "24px",
+              base: "8px",
+              xs: "4px",
+            },
+            fontFamily: {
+              "headline-md": ["Inter"],
+              "headline-lg-mobile": ["Inter"],
+              "label-sm": ["JetBrains Mono"],
+              "body-lg": ["Inter"],
+              "body-md": ["Inter"],
+              "headline-lg": ["Inter"],
+              display: ["Inter"],
+            },
+            fontSize: {
+              "headline-md": [
+                "24px",
+                {
+                  lineHeight: "32px",
+                  letterSpacing: "-0.01em",
+                  fontWeight: "600",
+                },
+              ],
+              "headline-lg-mobile": [
+                "28px",
+                { lineHeight: "36px", fontWeight: "600" },
+              ],
+              "label-sm": [
+                "12px",
+                {
+                  lineHeight: "16px",
+                  letterSpacing: "0.02em",
+                  fontWeight: "500",
+                },
+              ],
+              "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+              "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+              "headline-lg": [
+                "32px",
+                {
+                  lineHeight: "40px",
+                  letterSpacing: "-0.02em",
+                  fontWeight: "600",
+                },
+              ],
+              display: [
+                "48px",
+                {
+                  lineHeight: "56px",
+                  letterSpacing: "-0.02em",
+                  fontWeight: "700",
+                },
+              ],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .glass-card {
+        background: rgba(29, 31, 39, 0.7);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(67, 70, 85, 0.5);
+      }
+      .shimmer-text {
+        background: linear-gradient(
+          90deg,
+          #b4c5ff 0%,
+          #ffffff 50%,
+          #b4c5ff 100%
+        );
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: shimmer 4s linear infinite;
+      }
+      @keyframes shimmer {
+        to {
+          background-position: 200% center;
+        }
+      }
+      .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 24px;
+      }
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-background text-on-background font-body-md selection:bg-primary/30 selection:text-primary-fixed overflow-x-hidden"
+  >
+    <!-- Top Navigation -->
+    <nav
+      class="flex justify-between items-center h-16 px-gutter w-full sticky top-0 z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant"
+    >
+      <div class="flex items-center gap-8">
+        <div class="flex items-center gap-2">
+          <div
+            class="w-8 h-8 bg-primary rounded flex items-center justify-center"
+          >
+            <span
+              class="material-symbols-outlined text-on-primary text-xl"
+              style="font-variation-settings: &quot;FILL&quot; 1"
+              >auto_awesome</span
+            >
+          </div>
+          <span
+            class="font-headline-md text-headline-md font-bold text-on-surface"
+            >AI Assistant</span
+          >
+        </div>
+        <div class="hidden md:flex items-center gap-6">
+          <a
+            class="text-on-surface-variant hover:text-on-surface transition-colors font-body-md"
+            href="#"
+            >Docs</a
+          >
+          <a
+            class="text-on-surface-variant hover:text-on-surface transition-colors font-body-md"
+            href="#"
+            >API</a
+          >
+          <a
+            class="text-on-surface-variant hover:text-on-surface transition-colors font-body-md"
+            href="#"
+            >Community</a
+          >
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <button
+          class="hidden md:flex items-center gap-2 px-4 py-2 text-on-surface-variant hover:text-on-surface transition-colors"
+        >
+          <span class="material-symbols-outlined text-lg">help_outline</span>
+          <span>Feedback</span>
+        </button>
+        <button
+          class="bg-primary text-on-primary px-5 py-2 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+        >
+          New Project
+        </button>
+        <div
+          class="w-8 h-8 rounded-full bg-surface-variant border border-outline-variant flex items-center justify-center overflow-hidden"
+        >
+          <img
+            alt="User Profile"
+            class="w-full h-full object-cover"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcOjlUg3Ilbz-59cxWlhSdkySa0YXkHAvh9PNznC42REiE9qO9CvhdrwRd02-gZDbz9Z0KfkYbfrLDjcYKFVQM5Ysir0ij12G3Hn--Rb-eaS7L1LvwWJ8tl87Vjeg3dyKM4nZ4AB9oUehxqUzahtMtcKvtvKP31aZQsjdosTx8Z_aJyHgz8WzlFMa5aq4gRejqqZYiiQXPH8S5K61pk0PwVhAwPmran_PGXZxsXyVjWBEP3Ihkn15eDeYaJKgwP7Z_kaWU5rnO8OL8"
+          />
+        </div>
+      </div>
+    </nav>
+    <main class="relative">
+      <!-- Hero Section -->
+      <section
+        class="relative pt-24 pb-16 px-gutter max-w-container-max mx-auto overflow-hidden"
+      >
+        <!-- Animated Background Shader Element -->
+        <div
+          class="absolute -top-48 -left-48 w-[600px] h-[600px] opacity-20 pointer-events-none"
+        ></div>
+        <div class="text-center relative z-10 max-w-4xl mx-auto">
+          <div
+            class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container/30 border border-secondary-container mb-6"
+          >
+            <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+            <span class="text-label-sm font-label-sm text-primary"
+              >v2.4 Engine Now Live</span
+            >
+          </div>
+          <h1
+            class="font-display text-display text-on-surface mb-6 leading-tight"
+          >
+            The AI-Powered Workspace for
+            <span class="shimmer-text">High-Performance Teams</span>
+          </h1>
+          <p
+            class="font-body-lg text-body-lg text-on-surface-variant mb-10 max-w-2xl mx-auto"
+          >
+            Transform your team's velocity with automated document processing
+            and instant API generation. The first unified intelligence layer for
+            engineering and product orgs.
+          </p>
+          <div
+            class="flex flex-col sm:flex-row items-center justify-center gap-4"
+          >
+            <button
+              class="w-full sm:w-auto bg-primary text-on-primary px-8 py-4 rounded-xl font-headline-md text-headline-md shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
+            >
+              Get Started
+            </button>
+            <button
+              class="w-full sm:w-auto border border-outline-variant bg-surface-container-low text-on-surface px-8 py-4 rounded-xl font-headline-md text-headline-md hover:bg-surface-container-high transition-colors"
+            >
+              Book a Demo
+            </button>
+          </div>
+        </div>
+        <!-- Hero Image / Dashboard Mockup -->
+        <div class="mt-20 relative">
+          <div
+            class="absolute -inset-1 bg-gradient-to-r from-primary/20 to-tertiary/20 blur-2xl opacity-50"
+          ></div>
+          <div
+            class="relative glass-card rounded-2xl p-2 border border-outline-variant overflow-hidden"
+          >
+            <img
+              alt="High-fidelity AI Team Hub Dashboard Screenshot"
+              class="w-full rounded-xl border border-outline-variant shadow-2xl"
+              data-alt="A sophisticated dark-themed software dashboard for an AI workspace. The interface features crisp typography, vibrant data visualization widgets, a sidebar with clean icons, and a main workspace area showing code snippets and document summaries. The lighting is low and cinematic with neon blue and purple accents typical of high-end developer tools."
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuA97vjMdSQClkXYeEdIJIOw-MnxIW3N0cXEL4L0sOiFCONy8EgIEyxq9pvNrL6DBCGV90-5W-iTFJpZyLZG_QhuKj8QBINvyzOE-0hqxd-mg7gRYlJ-3nWF8OPaaTacCvh227YV1X2vJ7Kj6FFeXtyiuvyHuuFyViHhwXEan_5YQVn-kZlKrmBzfoj3vOXvavu5JCEWf-0ZuU_tEL0O9ESjOR8f-n5G34QS0Z6XLjE7KuyK-DIqUDFb-UxvhPeojnbnoIh40AEBXYRR"
+            />
+            <!-- Floating UI elements for depth -->
+            <div
+              class="absolute top-12 -right-8 glass-card p-4 rounded-xl shadow-xl border border-outline-variant hidden lg:block transform rotate-3"
+            >
+              <div class="flex items-center gap-3 mb-3">
+                <div
+                  class="w-8 h-8 rounded bg-tertiary-container flex items-center justify-center"
+                >
+                  <span
+                    class="material-symbols-outlined text-on-tertiary-container text-sm"
+                    >auto_fix_high</span
+                  >
+                </div>
+                <span class="text-label-sm font-label-sm text-on-surface"
+                  >API Generated</span
+                >
+              </div>
+              <div
+                class="h-1.5 w-24 bg-surface-variant rounded-full mb-2"
+              ></div>
+              <div class="h-1.5 w-16 bg-surface-variant rounded-full"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- AI Capabilities: Features Bento -->
+      <section class="py-24 px-gutter max-w-container-max mx-auto">
+        <div class="mb-16">
+          <h2 class="font-headline-lg text-headline-lg text-on-surface mb-4">
+            Built for the Modern Stack
+          </h2>
+          <p class="text-on-surface-variant max-w-xl">
+            Our intelligence layer integrates directly into your existing
+            workflow to eliminate manual overhead.
+          </p>
+        </div>
+        <div class="bento-grid">
+          <!-- Large Card: Summarizer -->
+          <div
+            class="col-span-12 lg:col-span-7 glass-card rounded-2xl p-8 relative overflow-hidden group"
+          >
+            <div class="relative z-10">
+              <div
+                class="w-12 h-12 bg-primary-container/20 rounded-xl flex items-center justify-center mb-6"
+              >
+                <span class="material-symbols-outlined text-primary text-2xl"
+                  >description</span
+                >
+              </div>
+              <h3
+                class="font-headline-md text-headline-md text-on-surface mb-3"
+              >
+                Intelligent Summarizer
+              </h3>
+              <p class="text-on-surface-variant mb-6 max-w-md">
+                Automatically condense technical specs, meeting transcripts, and
+                long-form docs into actionable tickets and checklists.
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <span
+                  class="px-3 py-1 rounded-full bg-surface-variant text-label-sm font-label-sm border border-outline-variant"
+                  >PR Reviews</span
+                >
+                <span
+                  class="px-3 py-1 rounded-full bg-surface-variant text-label-sm font-label-sm border border-outline-variant"
+                  >Slack Thread Sync</span
+                >
+              </div>
+            </div>
+            <div
+              class="absolute right-0 bottom-0 w-1/2 opacity-20 group-hover:opacity-40 transition-opacity"
+            ></div>
+          </div>
+          <!-- Medium Card: API Gen -->
+          <div
+            class="col-span-12 lg:col-span-5 bg-tertiary-container/10 border border-tertiary-container/20 rounded-2xl p-8 relative overflow-hidden"
+          >
+            <div
+              class="w-12 h-12 bg-tertiary-container/20 rounded-xl flex items-center justify-center mb-6"
+            >
+              <span class="material-symbols-outlined text-tertiary text-2xl"
+                >code</span
+              >
+            </div>
+            <h3 class="font-headline-md text-headline-md text-tertiary mb-3">
+              Instant API Gen
+            </h3>
+            <p class="text-on-surface-variant mb-6">
+              Describe your data model and logic in plain English. Get
+              production-ready GraphQL or REST endpoints instantly.
+            </p>
+            <div
+              class="bg-surface-container p-4 rounded-lg font-label-sm text-primary-fixed border border-outline-variant"
+            >
+              <code class="text-primary-fixed"
+                >POST /api/v1/generate-schema</code
+              >
+            </div>
+          </div>
+          <!-- Small Card: Notification Engine -->
+          <div class="col-span-12 md:col-span-4 glass-card rounded-2xl p-6">
+            <span class="material-symbols-outlined text-primary mb-4"
+              >notifications_active</span
+            >
+            <h4 class="font-headline-md text-headline-md text-on-surface mb-2">
+              Smart Alerts
+            </h4>
+            <p class="text-on-surface-variant text-body-md">
+              Context-aware notifications that only ping you when a decision is
+              actually required.
+            </p>
+          </div>
+          <!-- Small Card: Team Sync -->
+          <div class="col-span-12 md:col-span-4 glass-card rounded-2xl p-6">
+            <span class="material-symbols-outlined text-primary mb-4"
+              >groups</span
+            >
+            <h4 class="font-headline-md text-headline-md text-on-surface mb-2">
+              Team Workspace
+            </h4>
+            <p class="text-on-surface-variant text-body-md">
+              Shared context across every project. No more asking "what's the
+              status?" in every meeting.
+            </p>
+          </div>
+          <!-- Small Card: Security -->
+          <div class="col-span-12 md:col-span-4 glass-card rounded-2xl p-6">
+            <span class="material-symbols-outlined text-primary mb-4"
+              >admin_panel_settings</span
+            >
+            <h4 class="font-headline-md text-headline-md text-on-surface mb-2">
+              Enterprise Security
+            </h4>
+            <p class="text-on-surface-variant text-body-md">
+              SOC2 Type II compliant. Your data is encrypted and never used to
+              train public models.
+            </p>
+          </div>
+        </div>
+      </section>
+      <!-- Pricing Table -->
+      <!-- Final CTA -->
+      <section class="py-24 px-gutter text-center relative overflow-hidden">
+        <div class="absolute inset-0 z-0 opacity-10"></div>
+        <div class="relative z-10 max-w-2xl mx-auto">
+          <h2 class="font-display text-display text-on-surface mb-6">
+            Ready to accelerate?
+          </h2>
+          <p class="text-body-lg text-on-surface-variant mb-10">
+            Join 500+ teams including Stripe, Vercel, and Linear who use AI
+            Assistant to ship faster.
+          </p>
+          <button
+            class="bg-primary text-on-primary px-10 py-5 rounded-xl font-bold text-headline-md hover:scale-105 transition-transform"
+          >
+            Join Now
+          </button>
+        </div>
+      </section>
+    </main>
+    <!-- Footer -->
+    <footer
+      class="bg-surface border-t border-outline-variant pt-20 pb-10 px-gutter"
+    >
+      <div class="max-w-container-max mx-auto">
+        <div
+          class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-10 mb-20"
+        >
+          <div class="col-span-2">
+            <div class="flex items-center gap-2 mb-6">
+              <div
+                class="w-8 h-8 bg-primary rounded flex items-center justify-center"
+              >
+                <span
+                  class="material-symbols-outlined text-on-primary text-xl"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >auto_awesome</span
+                >
+              </div>
+              <span
+                class="font-headline-md text-headline-md font-bold text-on-surface"
+                >AI Assistant</span
+              >
+            </div>
+            <p class="text-on-surface-variant max-w-xs mb-6">
+              Building the infrastructure for the next generation of
+              high-performance engineering teams.
+            </p>
+            <div class="flex gap-4">
+              <a
+                class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors"
+                href="#"
+              >
+                <svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+                  <path
+                    d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.84 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"
+                  ></path>
+                </svg>
+              </a>
+              <a
+                class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors"
+                href="#"
+              >
+                <svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+                  <path
+                    d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
+                  ></path>
+                </svg>
+              </a>
+            </div>
+          </div>
+          <div>
+            <h5 class="font-bold text-on-surface mb-6">Product</h5>
+            <ul class="space-y-4 text-on-surface-variant text-body-md">
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >Features</a
+                >
+              </li>
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >Pricing</a
+                >
+              </li>
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >Integrations</a
+                >
+              </li>
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >Changelog</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h5 class="font-bold text-on-surface mb-6">Resources</h5>
+            <ul class="space-y-4 text-on-surface-variant text-body-md">
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >Docs</a
+                >
+              </li>
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >API Reference</a
+                >
+              </li>
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >Security</a
+                >
+              </li>
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >Status</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h5 class="font-bold text-on-surface mb-6">Company</h5>
+            <ul class="space-y-4 text-on-surface-variant text-body-md">
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >About</a
+                >
+              </li>
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >Blog</a
+                >
+              </li>
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >Careers</a
+                >
+              </li>
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >Contact</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h5 class="font-bold text-on-surface mb-6">Legal</h5>
+            <ul class="space-y-4 text-on-surface-variant text-body-md">
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >Privacy</a
+                >
+              </li>
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >Terms</a
+                >
+              </li>
+              <li>
+                <a class="hover:text-primary transition-colors" href="#"
+                  >Cookie Policy</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div
+          class="pt-10 border-t border-outline-variant flex flex-col md:flex-row justify-between items-center gap-6"
+        >
+          <p class="text-label-sm text-on-surface-variant">
+            © 2024 AI Team Hub Inc. All rights reserved.
+          </p>
+          <div
+            class="flex items-center gap-2 px-3 py-1 bg-surface-container rounded-full border border-outline-variant"
+          >
+            <span class="w-2 h-2 rounded-full bg-green-500"></span>
+            <span class="text-label-sm font-label-sm text-on-surface"
+              >Systems Operational</span
+            >
+          </div>
+        </div>
+      </div>
+    </footer>
+    <script>
+      // Micro-interactions for smooth scrolling or hover effects
+      document.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("mousedown", () => {
+          button.classList.add("scale-95");
+        });
+        button.addEventListener("mouseup", () => {
+          button.classList.remove("scale-95");
+        });
+        button.addEventListener("mouseleave", () => {
+          button.classList.remove("scale-95");
+        });
+      });
+    </script>
+  </body>
+</html>
