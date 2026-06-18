@@ -1,6 +1,5 @@
 package com.ai_powered_app.ai_team_assistant_platform.redis.impl;
 
-import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceResponse;
 import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.WorkspaceRedisService;
 import com.ai_powered_app.ai_team_assistant_platform.utils.RedisUtil;

@@ -1,11 +1,9 @@
 package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
-import com.ai_powered_app.ai_team_assistant_platform.entity.ActivityLog;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Document;
 import com.ai_powered_app.ai_team_assistant_platform.enums.ProcessingStatus;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.SummaryRedisService;
-import com.ai_powered_app.ai_team_assistant_platform.repository.ActivityLogRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.DocumentRepository;
 import com.ai_powered_app.ai_team_assistant_platform.ai.interfaces.AiService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.DocumentProcessingService;
@@ -31,7 +29,6 @@ public class DocumentProcessingServiceImpl implements DocumentProcessingService 
 
     private final SummaryRedisService redisService;
 
-    private final ActivityLogRepository activityLogRepository;
 
     @Override
     @Transactional

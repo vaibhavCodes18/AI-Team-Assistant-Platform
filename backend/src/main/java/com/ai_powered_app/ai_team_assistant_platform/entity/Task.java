@@ -4,10 +4,8 @@ import com.ai_powered_app.ai_team_assistant_platform.enums.TaskPriority;
 import com.ai_powered_app.ai_team_assistant_platform.enums.TaskStatus;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tasks")

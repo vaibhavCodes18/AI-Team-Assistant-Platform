@@ -1,7 +1,6 @@
 package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
-import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.FileStorageService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TextExtractionService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.Loader;
