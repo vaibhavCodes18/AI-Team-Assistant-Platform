@@ -91,3 +91,43 @@
       .custom-scrollbar::-webkit-scrollbar-thumb:hover {
         background: rgba(255, 255, 255, 0.2);
       }
+
+      .glass-panel {
+        background: rgba(29, 31, 39, 0.7);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(67, 70, 85, 0.5);
+      }
+
+      .input-field {
+        background: #191b23;
+        border: 1px solid #434655;
+        transition: all 0.2s ease;
+      }
+
+      .input-field:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        outline: none;
+      }
+
+      .mesh-gradient {
+        background-color: #11131b;
+        background-image: 
+          radial-gradient(at 0% 0%, hsla(225, 100%, 15%, 1) 0, transparent 50%), 
+          radial-gradient(at 100% 100%, hsla(225, 100%, 10%, 1) 0, transparent 50%),
+          radial-gradient(at 50% 0%, hsla(225, 75%, 25%, 0.15) 0, transparent 50%);
+      }
+
+      .input-focus-ring:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+      }
+
+      .btn-hover-effect {
+        transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .btn-hover-effect:active {
+        transform: scale(0.98);
+      }

@@ -26,7 +26,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         User currentUser = getAuthenticateUser();
 
-        List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(currentUser.getId());
+        List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(currentUser.getId());
 
         return notifications.stream().map(this::mapToNotificationResponse).toList();
     }

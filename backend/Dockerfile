@@ -6,4 +6,4 @@ COPY target/*.jar app.jar
 
 EXPOSE 1818
 
-ENTRYPOINT ["java","-jar","app.jar"]
+CMD ["java","-jar","app.jar"]
