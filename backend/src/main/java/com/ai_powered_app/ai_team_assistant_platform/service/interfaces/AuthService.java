@@ -13,4 +13,5 @@ public interface AuthService {
     TokenResfreshResponse refreshToken(String refreshToken);
     void userLogout(String refreshToken, String authHeader);
     UserResponse getCurrentUser();
+    UserResponse updateCurrentUser(com.ai_powered_app.ai_team_assistant_platform.dto.request.UserUpdateRequest request);
 }

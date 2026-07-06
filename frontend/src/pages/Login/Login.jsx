@@ -53,7 +53,7 @@ const Login = () => {
       }
       toast.success(response.message || 'Successfully logged in!', { id: toastId });
       setTimeout(() => {
-        navigate('/');
+        navigate('/profile');
       }, 1000);
     } catch (error) {
       console.error('Login error:', error);

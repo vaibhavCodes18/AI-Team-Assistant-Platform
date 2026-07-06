@@ -92,6 +92,14 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(res);
     }
 
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResponse<UserResponse>> updateProfile(@Valid @RequestBody com.ai_powered_app.ai_team_assistant_platform.dto.request.UserUpdateRequest userUpdateRequest){
+        UserResponse userResponse = authService.updateCurrentUser(userUpdateRequest);
+        ApiResponse<UserResponse> res = new ApiResponse<>(200, "User successfully updated", userResponse);
+
+        return ResponseEntity.status(HttpStatus.OK).body(res);
+    }
+
     private void addRefreshCookie(HttpServletResponse response, String tokenValue, int maxAge) {
         ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE_NAME, tokenValue)
                 .httpOnly(true)

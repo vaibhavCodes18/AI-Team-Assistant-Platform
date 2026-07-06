@@ -69,8 +69,9 @@ public class AuthServiceImpl implements AuthService {
         user.setEmail(userRegistrationRequest.getEmail());
         user.setName(userRegistrationRequest.getName());
         user.setPassword(passwordEncoder.encode(userRegistrationRequest.getPassword()));
-        user.setPlatformRole(PlatformRole.USER);
+        user.setPlatformRole(PlatformRole.Standard_Member);
         user.setProvider(AuthProvider.LOCAL);
+        user.setDesignation(userRegistrationRequest.getDesignation());
         User savedUser = userRepository.save(user);
 
         return getUserResponse(savedUser);
@@ -194,6 +195,38 @@ public class AuthServiceImpl implements AuthService {
         return response;
     }
 
+    @Override
+    @Transactional
+    public UserResponse updateCurrentUser(com.ai_powered_app.ai_team_assistant_platform.dto.request.UserUpdateRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Long userId = userDetails.getId();
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with this id."));
+
+        if (request.getName() != null) {
+            user.setName(request.getName());
+        }
+        if (request.getProfileImage() != null) {
+            user.setProfileImage(request.getProfileImage());
+        }
+        if (request.getDesignation() != null) {
+            user.setDesignation(request.getDesignation());
+        }
+        if (request.getIsActive() != null) {
+            user.setIsActive(request.getIsActive());
+        }
+        user.setPlatformRole(PlatformRole.Standard_Member);
+        User savedUser = userRepository.save(user);
+        UserResponse response = getUserResponse(savedUser);
+
+        // Update the redis cache with updated user response
+        redisService.saveRedisUser(savedUser.getId(), response, Duration.ofMinutes(10L));
+
+        return response;
+    }
+
     private static UserResponse getUserResponse(User savedUser) {
         UserResponse userResponse = new UserResponse();
         userResponse.setId(savedUser.getId());
@@ -201,6 +234,7 @@ public class AuthServiceImpl implements AuthService {
         userResponse.setEmail(savedUser.getEmail());
         userResponse.setProvider(savedUser.getProvider());
         userResponse.setProfileImage(savedUser.getProfileImage());
+        userResponse.setDesignation(savedUser.getDesignation());
         userResponse.setPlatformRole(savedUser.getPlatformRole());
         userResponse.setIsActive(savedUser.getIsActive());
         userResponse.setCreatedAt(savedUser.getCreatedAt());

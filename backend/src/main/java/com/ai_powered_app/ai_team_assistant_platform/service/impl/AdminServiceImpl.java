@@ -48,6 +48,7 @@ public class AdminServiceImpl implements AdminService {
         user.setPassword(passwordEncoder.encode(userRegistrationRequest.getPassword()));
         user.setPlatformRole(PlatformRole.SUPER_ADMIN);
         user.setProvider(AuthProvider.LOCAL);
+        user.setDesignation(userRegistrationRequest.getDesignation());
         User savedUser = userRepository.save(user);
 
         return getUserResponse(savedUser);
@@ -63,7 +64,7 @@ public class AdminServiceImpl implements AdminService {
                     "Only super admin allowed.");
         }
 
-        List<User> allUsers = userRepository.findByPlatformRole(PlatformRole.USER);
+        List<User> allUsers = userRepository.findByPlatformRole(PlatformRole.Standard_Member);
 
         return allUsers.stream().map(AdminServiceImpl::getUserResponse).toList();
     }
@@ -119,6 +120,7 @@ public class AdminServiceImpl implements AdminService {
         userResponse.setEmail(savedUser.getEmail());
         userResponse.setProvider(savedUser.getProvider());
         userResponse.setProfileImage(savedUser.getProfileImage());
+        userResponse.setDesignation(savedUser.getDesignation());
         userResponse.setPlatformRole(savedUser.getPlatformRole());
         userResponse.setIsActive(savedUser.getIsActive());
         userResponse.setCreatedAt(savedUser.getCreatedAt());
