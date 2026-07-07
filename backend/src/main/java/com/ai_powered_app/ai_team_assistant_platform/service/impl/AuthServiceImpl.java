@@ -214,9 +214,6 @@ public class AuthServiceImpl implements AuthService {
         if (request.getDesignation() != null) {
             user.setDesignation(request.getDesignation());
         }
-        if (request.getIsActive() != null) {
-            user.setIsActive(request.getIsActive());
-        }
         user.setPlatformRole(PlatformRole.Standard_Member);
         User savedUser = userRepository.save(user);
         UserResponse response = getUserResponse(savedUser);

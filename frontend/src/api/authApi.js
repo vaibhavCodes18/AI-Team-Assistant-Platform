@@ -17,6 +17,11 @@ export const logoutUser = async () => {
   return response.data;
 };
 
+export const refreshToken = async () => {
+  const response = await api.post("/v1/auth/refresh");
+  return response.data;
+};
+
 export const fetchUserProfile = async () => {
   const response = await api.get("/v1/auth/profile");
   return response.data;

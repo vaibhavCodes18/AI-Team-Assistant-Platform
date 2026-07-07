@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { registerUser } from '../../api/authApi';
+import { DESIGNATIONS } from '../../constants/appConstants';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -244,12 +245,11 @@ const Register = () => {
                   onBlur={() => setFocusedField(null)}
                 >
                   <option value="" className="bg-[#191b23] text-outline-variant">Select designation...</option>
-                  <option value="Software Engineer" className="bg-[#191b23]">Software Engineer</option>
-                  <option value="Product Manager" className="bg-[#191b23]">Product Manager</option>
-                  <option value="QA Engineer" className="bg-[#191b23]">QA Engineer</option>
-                  <option value="Designer" className="bg-[#191b23]">Designer</option>
-                  <option value="DevOps Engineer" className="bg-[#191b23]">DevOps Engineer</option>
-                  <option value="Project Manager" className="bg-[#191b23]">Project Manager</option>
+                  {DESIGNATIONS.map((designation) => (
+                    <option key={designation} value={designation} className="bg-[#191b23]">
+                      {designation}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

@@ -20,6 +20,4 @@ public class UserUpdateRequest {
 
     @Size(max = 100, message = "Designation must not exceed 100 characters")
     private String designation;
-
-    private Boolean isActive;
 }

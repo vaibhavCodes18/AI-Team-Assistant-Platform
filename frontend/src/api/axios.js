@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { refreshToken } from './authApi';
 
 const api = axios.create({
   baseURL: '/api',
@@ -19,5 +20,28 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error?.config;
+    if (error?.response?.status === 401 && !originalRequest?._retry) {
+      originalRequest._retry = true;
+      const res = await refreshToken();
+      
+      const newToken = res?.data?.accessToken;
+      console.log('refresh token response: ', res);
+
+      if (newToken) {
+        localStorage.setItem('accessToken', newToken);
+      }
+      originalRequest.headers.Authorization = `Bearer ${newToken}`;
+
+      return api(originalRequest)
+    }
+    return Promise.reject(error);
+  }
+);
+
 
 export default api;

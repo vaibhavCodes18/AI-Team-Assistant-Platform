@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { fetchUserProfile, logoutUser, updateUserProfile } from '../../api/authApi';
 import Sidebar from '../../components/layout/Sidebar';
+import { DESIGNATIONS } from '../../constants/appConstants';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -176,7 +177,7 @@ const Profile = () => {
         </header>
 
         {/* Profile Content */}
-        <main className="flex-1 overflow-y-auto p-gutter custom-scrollbar">
+        <main className="flex-1 overflow-y-auto p-gutter pb-24 md:pb-gutter custom-scrollbar">
           <div className="max-w-container-max mx-auto space-y-xl">
             {/* Page Header */}
             <div>
@@ -291,20 +292,25 @@ const Profile = () => {
                       <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block" htmlFor="designation">
                         Designation
                       </label>
-                      <input 
-                        className={`w-full h-12 px-4 rounded-lg text-on-surface font-body-md transition-all ${
+                      <select 
+                        className={`w-full h-12 px-4 rounded-lg text-on-surface font-body-md transition-all cursor-pointer ${
                           isEditing 
                             ? 'bg-surface-container-low border border-outline-variant input-focus-ring' 
                             : 'bg-surface-container-high border border-transparent cursor-not-allowed'
                         }`}
                         id="designation" 
                         name="designation"
-                        type="text"
                         value={formData.designation}
                         onChange={handleInputChange}
                         disabled={!isEditing || saving}
-                        placeholder="e.g. Lead Software Engineer"
-                      />
+                      >
+                        <option value="" className="bg-[#191b23] text-outline-variant">Select designation...</option>
+                        {DESIGNATIONS.map((designation) => (
+                          <option key={designation} value={designation} className="bg-[#191b23]">
+                            {designation}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
