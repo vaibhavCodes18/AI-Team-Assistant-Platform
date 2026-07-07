@@ -1,5 +1,8 @@
 package com.ai_powered_app.ai_team_assistant_platform.entity;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -29,6 +32,10 @@ public class Workspace extends BaseEntity {
     private String logoUrl;
 
     private Boolean isActive = true;
+    
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "workspace_members", joinColumns = @JoinColumn(name = "workspace_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private Set<User> members = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")

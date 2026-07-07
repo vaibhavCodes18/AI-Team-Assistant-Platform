@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 @Builder
@@ -19,6 +20,7 @@ public class WorkspaceResponse {
     private String logoUrl;
     private Boolean isActive;
     private Long ownerId;
+    private Set<UserResponse> workspaceMembers;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

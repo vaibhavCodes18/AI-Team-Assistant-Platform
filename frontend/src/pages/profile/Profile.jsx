@@ -17,6 +17,19 @@ const Profile = () => {
   });
   const navigate = useNavigate();
 
+  const handleLogout = async () => {
+      
+      try {
+        const logoutRes = await logoutUser();
+        toast.success(logoutRes?.msg || 'Logged out successfully');
+      } catch (error) {
+        console.error('Logout API failed:', error);
+      } finally {
+        localStorage.removeItem('accessToken');
+        navigate('/login');
+      }
+    };
+
   useEffect(() => {
     const loadProfile = async () => {
       try {
@@ -89,17 +102,7 @@ const Profile = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      const logoutRes = await logoutUser();
-      toast.success(logoutRes?.msg || 'Logged out successfully');
-    } catch (error) {
-      console.error('Logout API failed:', error);
-    } finally {
-      localStorage.removeItem('accessToken');
-      navigate('/login');
-    }
-  };
+
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -416,10 +419,10 @@ const Profile = () => {
           <span className="material-symbols-outlined">dashboard</span>
           <span className="text-[10px]">Dashboard</span>
         </Link>
-        <button className="flex flex-col items-center gap-1 text-on-surface-variant">
+        <Link to="/workspaces" className="flex flex-col items-center gap-1 text-on-surface-variant">
           <span className="material-symbols-outlined">workspaces</span>
           <span className="text-[10px]">Work</span>
-        </button>
+        </Link>
         <button className="flex flex-col items-center gap-1 text-on-surface-variant">
           <div className="w-10 h-10 -mt-8 bg-primary rounded-full flex items-center justify-center shadow-lg text-on-primary">
             <span className="material-symbols-outlined">add</span>

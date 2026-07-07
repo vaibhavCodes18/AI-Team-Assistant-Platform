@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -96,6 +97,18 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         return getWorkspaceResponse(workspace);
 
+    }
+
+    @Override
+    public List<WorkspaceResponse> getMyWorkspaces(){
+        User loggedInUser = getAuthenticateUser();
+        List<WorkspaceMember> workspaceMembers = workspaceMemberRepository.findByUser(loggedInUser);
+        List<Workspace> workspaces = new ArrayList<>();
+        for(WorkspaceMember workspaceMember:workspaceMembers){
+            Workspace workspace = workspaceMember.getWorkspace();
+            workspaces.add(workspace);
+        }
+        return workspaces.stream().map(this::getWorkspaceResponse).toList();
     }
 
     @Override
@@ -373,6 +386,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         response.setIsActive(savedWorkspace.getIsActive());
         response.setCreatedAt(savedWorkspace.getCreatedAt());
         response.setUpdatedAt(savedWorkspace.getUpdatedAt());
+        response.setWorkspaceMembers(savedWorkspace.getMembers().stream().map(this::getUserResponse).collect(Collectors.toSet()));
         return response;
     }
 

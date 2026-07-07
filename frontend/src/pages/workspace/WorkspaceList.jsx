@@ -1,0 +1,435 @@
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { fetchUserProfile, logoutUser } from '../../api/authApi';
+import Sidebar from '../../components/layout/Sidebar';
+import { getAllWorkspaces, createWorkspace } from '../../api/workspaceApi';
+
+const WorkspaceList = () => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [workspaces, setWorkspaces] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Modal State
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    logoUrl: ''
+  });
+
+  const navigate = useNavigate();
+
+  const loadData = async () => {
+    try {
+      const data = await fetchUserProfile();  
+      const allWorkspaces = await getAllWorkspaces();
+      if (allWorkspaces?.data) {
+        setWorkspaces(allWorkspaces.data);
+      }
+      if (data?.data) {
+        setUser(data.data);
+      }
+    } catch (error) {
+      console.error('Failed to load profile or workspaces:', error);
+      toast.error('Failed to fetch profile information');
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem('accessToken');
+        navigate('/login');
+      }
+    }
+  };
+
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true);
+      await loadData();
+      setLoading(false);
+    };
+    init();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    try {
+      const logoutRes = await logoutUser();
+      toast.success(logoutRes?.msg || 'Logged out successfully');
+    } catch (error) {
+      console.error('Logout API failed:', error);
+    } finally {
+      localStorage.removeItem('accessToken');
+      navigate('/login');
+    }
+  };
+
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  };
+
+  const getWorkspaceColor = (id) => {
+    const colors = [
+      'bg-primary/10 border-primary/20 text-primary',
+      'bg-tertiary/10 border-tertiary/20 text-tertiary',
+      'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+      'bg-indigo-500/10 border-indigo-500/20 text-indigo-400',
+      'bg-cyan-500/10 border-cyan-500/20 text-cyan-400',
+      'bg-secondary-container text-on-secondary-container'
+    ];
+    return colors[id % colors.length];
+  };
+
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!createForm.name.trim()) {
+      toast.error('Workspace name is required');
+      return;
+    }
+    if (!createForm.slug.trim()) {
+      toast.error('Workspace slug is required');
+      return;
+    }
+    if (!/^[a-z0-9-]+$/.test(createForm.slug)) {
+      toast.error('Slug must contain only lowercase letters, numbers, and hyphens');
+      return;
+    }
+
+    try {
+      setCreating(true);
+      const res = await createWorkspace(createForm);
+      if (res?.data) {
+        toast.success(res.msg || 'Workspace created successfully!');
+        setIsCreateModalOpen(false);
+        setCreateForm({ name: '', slug: '', description: '', logoUrl: '' });
+        // Reload list
+        const updatedWorkspaces = await getAllWorkspaces();
+        if (updatedWorkspaces?.data) {
+          setWorkspaces(updatedWorkspaces.data);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to create workspace:', error);
+      toast.error(error.response?.data?.message || 'Failed to create workspace');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  // Filter workspaces by search query
+  const filteredWorkspaces = workspaces.filter(ws => 
+    ws.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (ws.description && ws.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center text-on-background">
+        <div className="flex flex-col items-center gap-md">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="font-body-md text-on-surface-variant animate-pulse">Loading workspaces...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-background text-on-background font-body-md">
+      {/* SideNavBar Component */}
+      <Sidebar />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden">
+        {/* TopNavBar Component */}
+        <header className="flex justify-between items-center h-16 px-gutter w-full sticky top-0 z-40 bg-surface/80 backdrop-blur-md border-b border-outline-variant">
+          <div className="flex items-center gap-lg">
+            <div className="relative group">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-on-surface-variant">
+                <span className="material-symbols-outlined text-[20px]">search</span>
+              </span>
+              <input 
+                className="bg-surface-container border-none text-on-surface text-body-md rounded-lg py-2 pl-10 pr-4 w-64 focus:ring-2 focus:ring-primary focus:ring-offset-2 ring-offset-surface outline-none transition-all" 
+                placeholder="Search workspaces..." 
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-md">
+            <button 
+              onClick={handleLogout}
+              className="md:hidden flex items-center justify-center p-2 text-on-surface-variant hover:text-on-surface rounded-full transition-colors"
+              title="Sign Out"
+            >
+              <span className="material-symbols-outlined">logout</span>
+            </button>
+            <div className="w-8 h-8 rounded-full overflow-hidden border border-outline-variant ml-2 flex items-center justify-center bg-primary-container text-on-primary-container font-semibold text-xs">
+              {user?.profileImage ? (
+                <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+              ) : (
+                getInitials(user?.name)
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Workspace Content */}
+        <main className="flex-1 overflow-y-auto p-gutter pb-24 md:pb-gutter custom-scrollbar">
+          <div className="max-w-container-max mx-auto space-y-xl">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+              <div className="space-y-2 text-left">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-8 h-[2px] bg-primary"></span>
+                  <span className="font-label-sm text-label-sm text-primary uppercase tracking-widest">Directory</span>
+                </div>
+                <h2 className="font-headline-lg text-headline-lg text-on-surface">Workspace Directory</h2>
+                <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                  Manage and monitor your enterprise instances. High-velocity team coordination starts with a unified overview of all active workstreams.
+                </p>
+              </div>
+              <div className="flex gap-4">
+                <button className="px-6 py-3 bg-surface-container-high border border-outline-variant text-on-surface rounded-xl font-label-sm text-label-sm flex items-center gap-2 hover:bg-surface-container-highest transition-all active:scale-95">
+                  <span className="material-symbols-outlined">filter_list</span>
+                  Filter
+                </button>
+                <button 
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="px-6 py-3 bg-primary-container text-on-primary-container border border-primary/20 rounded-xl font-label-sm text-label-sm flex items-center gap-2 hover:brightness-110 transition-all active:scale-95 shadow-xl shadow-primary-container/20"
+                >
+                  <span className="material-symbols-outlined">add_circle</span>
+                  Create New Workspace
+                </button>
+              </div>
+            </div>
+
+            {/* Workspace Bento Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredWorkspaces.map((workspace) => (
+                <div 
+                  key={workspace.id}
+                  onClick={() => navigate(`/workspaces/${workspace.id}`)}
+                  className="glass-card rounded-xl p-6 flex flex-col group relative overflow-hidden text-left bg-primary/5 border-primary/30 cursor-pointer"
+                >
+                  <div className="shimmer absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                  
+                  {/* Status Indicator */}
+                  <div className="absolute top-0 right-0 p-4 flex items-center gap-1.5 bg-green-500/5 border border-green-500/10 rounded-bl-lg">
+                    <span className={`w-2 h-2 rounded-full ${workspace.isActive ? 'bg-green-400 animate-pulse' : 'bg-outline-variant'}`}></span>
+                    <span className={`text-[10px] uppercase font-bold ${workspace.isActive ? 'text-green-400' : 'text-on-surface-variant'}`}>
+                      {workspace.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-start mb-6">
+                    {/* Logo/Icon */}
+                    {workspace.logoUrl ? (
+                      <div className="w-14 h-14 rounded-2xl border border-outline-variant/30 flex items-center justify-center overflow-hidden bg-surface-container">
+                        <img src={workspace.logoUrl} alt={workspace.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center overflow-hidden font-bold text-headline-md font-headline-md ${getWorkspaceColor(workspace.id)}`}>
+                        {getInitials(workspace.name)}
+                      </div>
+                    )}
+
+                    {/* Member Avatars */}
+                    {workspace.workspaceMembers && workspace.workspaceMembers.length > 0 && (
+                      <div className="flex -space-x-2">
+                        {workspace.workspaceMembers.slice(0, 3).map((member, index) => (
+                          <div key={index} className="w-8 h-8 rounded-full border-2 border-surface-container-low bg-surface-container-high overflow-hidden" title={member.name}>
+                            {member.profileImage ? (
+                              <img className="w-full h-full object-cover" alt={getInitials(member.name)} src={member.profileImage} />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-[10px] font-bold text-on-surface">
+                                {getInitials(member.name)}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {workspace.workspaceMembers.length > 3 && (
+                          <div className="w-8 h-8 rounded-full border-2 border-surface-container-low bg-surface-container-high flex items-center justify-center bg-zinc-800 text-[10px] font-bold text-on-surface" title={`${workspace.workspaceMembers.length - 3} more members`}>
+                            +{workspace.workspaceMembers.length - 3}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mb-8">
+                    <h3 className="font-headline-md text-headline-md text-on-surface mb-1 group-hover:text-primary transition-colors">
+                      {workspace.name}
+                    </h3>
+                    <p className="font-body-md text-body-md text-on-surface-variant">
+                      {workspace.description || <span className="italic text-on-surface-variant/70">No description provided.</span>}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mt-auto">
+                    <div className="p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/30">
+                      <p className="font-label-sm text-[10px] text-on-surface-variant uppercase mb-1">Members</p>
+                      <p className="font-headline-md text-[20px] text-on-surface">{workspace.workspaceMembers?.length || 0}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Empty State / Add New Card */}
+              <button 
+                onClick={() => setIsCreateModalOpen(true)}
+                className="border-2 border-dashed border-outline-variant/40 rounded-xl p-6 flex flex-col items-center justify-center gap-4 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+              >
+                <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <span className="material-symbols-outlined text-on-surface-variant text-[32px] group-hover:text-primary transition-colors">add</span>
+                </div>
+                <div className="text-center">
+                  <h3 className="font-headline-md text-[18px] text-on-surface mb-1">Create Workspace</h3>
+                  <p className="font-body-md text-body-md text-on-surface-variant">Set up a new collaborative space</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {/* Mobile Navigation (BottomNavBar substitute for mobile view) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface border-t border-outline-variant flex items-center justify-around z-50">
+        <Link to="/" className="flex flex-col items-center gap-1 text-on-surface-variant">
+          <span className="material-symbols-outlined">dashboard</span>
+          <span className="text-[10px]">Dashboard</span>
+        </Link>
+        <Link to="/workspaces" className="flex flex-col items-center gap-1 text-primary">
+          <span className="material-symbols-outlined">workspaces</span>
+          <span className="text-[10px]">Workspaces</span>
+        </Link>
+        <button 
+          onClick={() => setIsCreateModalOpen(true)}
+          className="flex flex-col items-center gap-1 text-on-surface-variant"
+        >
+          <div className="w-10 h-10 -mt-8 bg-primary rounded-full flex items-center justify-center shadow-lg text-on-primary">
+            <span className="material-symbols-outlined">add</span>
+          </div>
+          <span className="text-[10px]">New</span>
+        </button>
+        <button className="flex flex-col items-center gap-1 text-on-surface-variant">
+          <span className="material-symbols-outlined">notifications</span>
+          <span className="text-[10px]">Alerts</span>
+        </button>
+        <Link to="/profile" className="flex flex-col items-center gap-1 text-on-surface-variant">
+          <span className="material-symbols-outlined">person</span>
+          <span className="text-[10px]">Profile</span>
+        </Link>
+      </nav>
+
+      {/* Create Workspace Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-md">
+          <div className="bg-surface-container border border-outline-variant rounded-xl p-lg max-w-md w-full space-y-lg shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            <button 
+              onClick={() => setIsCreateModalOpen(false)}
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface transition-colors"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <div className="text-left">
+              <h3 className="text-headline-md font-bold text-on-surface">Create New Workspace</h3>
+              <p className="text-body-md text-on-surface-variant mt-xs">Workspaces are where your team manages projects, docs, and sprints.</p>
+            </div>
+            
+            <form onSubmit={handleCreateSubmit} className="space-y-md text-left">
+              <div className="space-y-xs">
+                <label className="font-label-sm text-on-surface-variant block ml-xs" htmlFor="modalName">
+                  Workspace Name
+                </label>
+                <input 
+                  className="w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none"
+                  id="modalName"
+                  type="text"
+                  required
+                  placeholder="e.g. Core Systems"
+                  value={createForm.name}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+                    setCreateForm(prev => ({ ...prev, name, slug }));
+                  }}
+                />
+              </div>
+
+              <div className="space-y-xs">
+                <label className="font-label-sm text-on-surface-variant block ml-xs" htmlFor="modalSlug">
+                  Workspace Slug
+                </label>
+                <input 
+                  className="w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none"
+                  id="modalSlug"
+                  type="text"
+                  required
+                  pattern="^[a-z0-9-]+$"
+                  placeholder="e.g. core-systems"
+                  value={createForm.slug}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, slug: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-xs">
+                <label className="font-label-sm text-on-surface-variant block ml-xs" htmlFor="modalDesc">
+                  Description (Optional)
+                </label>
+                <textarea 
+                  className="w-full h-24 p-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none resize-none"
+                  id="modalDesc"
+                  placeholder="Tell us what this workspace is about..."
+                  value={createForm.description}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-xs">
+                <label className="font-label-sm text-on-surface-variant block ml-xs" htmlFor="modalLogo">
+                  Logo URL (Optional)
+                </label>
+                <input 
+                  className="w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none"
+                  id="modalLogo"
+                  type="url"
+                  placeholder="https://example.com/logo.png"
+                  value={createForm.logoUrl}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, logoUrl: e.target.value }))}
+                />
+              </div>
+
+              <div className="flex justify-end gap-md pt-md border-t border-outline-variant mt-lg">
+                <button 
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-4 py-2 border border-outline-variant hover:bg-surface-container-high text-on-surface font-bold rounded-lg transition-colors"
+                  disabled={creating}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-5 py-2 bg-primary text-on-primary font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-all flex items-center gap-xs"
+                  disabled={creating}
+                >
+                  {creating ? 'Creating...' : 'Create'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default WorkspaceList;

@@ -1,13 +1,11 @@
-// import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-// import { toast } from 'react-hot-toast';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { logoutUser } from '../../api/authApi';
+import toast from 'react-hot-toast';
 
-const Sidebar = ({ handleLogout }) => {
+const Sidebar = () => {
   const location = useLocation();
-  // const navigate = useNavigate();
   const currentPath = location.pathname;
-
-  const logoutAction = handleLogout 
+  const navigate = useNavigate();
 
   const getLinkClass = (path) => {
     const baseClass = "flex items-center gap-3 px-4 py-2 transition-all rounded-md ";
@@ -16,6 +14,17 @@ const Sidebar = ({ handleLogout }) => {
     }
     return baseClass + "text-on-surface-variant hover:bg-surface-container-high transition-colors";
   };
+  const handleLogout = async () => {
+      try {
+        const logoutRes = await logoutUser();
+        toast.success(logoutRes?.msg || 'Logged out successfully');
+      } catch (error) {
+        console.error('Logout API failed:', error);
+      } finally {
+        localStorage.removeItem('accessToken');
+        navigate('/login');
+      }
+    };
 
   return (
     <aside className="w-64 h-screen border-r border-outline-variant bg-surface flex flex-col shrink-0 hidden md:flex">
@@ -40,10 +49,10 @@ const Sidebar = ({ handleLogout }) => {
           <span className="material-symbols-outlined">dashboard</span>
           <span className="font-body-md">Dashboard</span>
         </Link>
-        <a href="#" className={getLinkClass('/workspace')}>
+        <Link to="/workspaces" className={getLinkClass('/workspaces')}>
           <span className="material-symbols-outlined">workspaces</span>
           <span className="font-body-md">Workspace</span>
-        </a>
+        </Link>
         <a href="#" className={getLinkClass('/projects')}>
           <span className="material-symbols-outlined">folder_open</span>
           <span className="font-body-md">Projects</span>
@@ -77,7 +86,7 @@ const Sidebar = ({ handleLogout }) => {
 
       <div className="mt-auto p-4 border-t border-outline-variant space-y-1">
         <button 
-          onClick={logoutAction}
+          onClick={handleLogout}
           className="w-full mb-4 bg-error-container text-on-error-container hover:bg-red-800 hover:text-white py-2 rounded-lg font-body-md font-bold flex items-center justify-center gap-sm transition-all"
         >
           <span className="material-symbols-outlined text-[18px]">logout</span>

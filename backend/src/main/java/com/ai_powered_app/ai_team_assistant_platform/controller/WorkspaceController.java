@@ -37,6 +37,14 @@ public class WorkspaceController {
         ApiResponse<WorkspaceResponse> apiRes = new ApiResponse<>(200, "Workspaces Fetched", response);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<WorkspaceResponse>>> getMyWorkspaces(){
+        List<WorkspaceResponse> response = workspaceService.getMyWorkspaces();
+        ApiResponse<List<WorkspaceResponse>> apiRes = new ApiResponse<>(200, "Workspaces Fetched", response);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
+
+
 
     @PutMapping("/{workspaceId}")
     public ResponseEntity<ApiResponse<WorkspaceResponse>> updateWorkspace(

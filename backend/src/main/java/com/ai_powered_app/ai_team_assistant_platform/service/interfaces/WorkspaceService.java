@@ -9,6 +9,7 @@ import java.util.List;
 public interface WorkspaceService {
     WorkspaceResponse createWorkspace(WorkspaceRequest workspaceRequest);
     WorkspaceResponse getWorkspaceById(Long workspaceId);
+    List<WorkspaceResponse> getMyWorkspaces();
     WorkspaceResponse updateWorkspace(Long workspaceId, WorkspaceUpdateRequest workspaceUpdateRequest);
     void deleteWorkspace(Long workspaceId);
     WorkspaceMemberResponse inviteMember(Long workspaceId, WorkspaceMemberRequest request);
