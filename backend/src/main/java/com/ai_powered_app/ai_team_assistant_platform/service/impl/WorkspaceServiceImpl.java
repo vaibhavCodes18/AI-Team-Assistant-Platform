@@ -21,7 +21,9 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +41,10 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     private final ActivityLogRepository activityLogRepository;
 
     private final NotificationRepository notificationRepository;
+    private final ProjectRepository projectRepository;
+    private final TaskRepository taskRepository;
+    private final AIRequestRepository aiRequestRepository;
+    private final DocumentRepository documentRepository;
 
     @Override
     public WorkspaceResponse createWorkspace(WorkspaceRequest workspaceRequest) {
@@ -82,16 +88,17 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         User user = getAuthenticateUser();
 
-        if(!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, user.getId())){
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, user.getId())) {
             throw new BadCredentialsException("You are not a member of this workspace");
         }
 
         WorkspaceResponse cached = redisService.getRedisWorkspace(workspaceId);
 
-        if(cached != null) return cached;
+        if (cached != null)
+            return cached;
 
-        Workspace workspace = workspaceRepository.findById(workspaceId).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
-
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
 
         redisService.saveRedisWorkspace(workspaceId, getWorkspaceResponse(workspace), Duration.ofMinutes(30L));
 
@@ -100,11 +107,11 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     }
 
     @Override
-    public List<WorkspaceResponse> getMyWorkspaces(){
+    public List<WorkspaceResponse> getMyWorkspaces() {
         User loggedInUser = getAuthenticateUser();
         List<WorkspaceMember> workspaceMembers = workspaceMemberRepository.findByUser(loggedInUser);
         List<Workspace> workspaces = new ArrayList<>();
-        for(WorkspaceMember workspaceMember:workspaceMembers){
+        for (WorkspaceMember workspaceMember : workspaceMembers) {
             Workspace workspace = workspaceMember.getWorkspace();
             workspaces.add(workspace);
         }
@@ -161,24 +168,29 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         User user = getAuthenticateUser();
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
-                
-        WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, user.getId())
+
+        WorkspaceMember workspaceMember = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(workspaceId, user.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
-                
+
         if (workspaceMember.getRole() != WorkspaceRole.OWNER) {
             throw new BadCredentialsException("Only the OWNER can delete the workspace");
         }
-        
-        List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspaceId);
-        workspaceMemberRepository.deleteAll(members);
 
-        ActivityLog activityLog = new ActivityLog();
-        activityLog.setWorkspace(workspace);
-        activityLog.setUser(user);
-        activityLog.setAction("WORKSPACE_DELETED");
-        activityLog.setEntityType("WORKSPACE");
-        activityLog.setEntityId(workspace.getId());
-        activityLog.setMetadata("Workspace deleted");
+        List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspaceId);
+        List<Project> projects = projectRepository.findByWorkspaceId(workspaceId);
+        List<AIRequest> aiRequests = aiRequestRepository.findByWorkspaceId(workspaceId);
+        List<Document> documents = documentRepository.findByWorkspaceId(workspaceId);
+        List<Task> tasks = taskRepository.findByWorkspaceId(workspaceId);
+        List<ActivityLog> activityLogs = activityLogRepository.findByWorkspaceId(workspaceId);
+
+        workspaceMemberRepository.deleteAll(members);
+        projectRepository.deleteAll(projects);
+        aiRequestRepository.deleteAll(aiRequests);
+        documentRepository.deleteAll(documents);
+        taskRepository.deleteAll(tasks);
+        activityLogRepository.deleteAll(activityLogs);
+        taskRepository.deleteAll(tasks);
 
         List<Notification> notifications = new ArrayList<>();
 
@@ -200,36 +212,37 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         workspaceRepository.delete(workspace);
     }
-    
+
     @Override
     @Transactional
     public WorkspaceMemberResponse inviteMember(Long workspaceId, WorkspaceMemberRequest request) {
         User currentUser = getAuthenticateUser();
-        
+
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
-                
-        WorkspaceMember currentMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, currentUser.getId())
+
+        WorkspaceMember currentMember = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(workspaceId, currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
-                
+
         if (currentMember.getRole() != WorkspaceRole.OWNER && currentMember.getRole() != WorkspaceRole.ADMIN) {
             throw new BadCredentialsException("Only OWNER or ADMIN can invite members");
         }
-        
+
         User userToInvite = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-                
+
         if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, request.getUserId())) {
             throw new IllegalArgumentException("User is already a member of this workspace");
         }
-        
+
         WorkspaceMember newMember = new WorkspaceMember();
         newMember.setWorkspace(workspace);
         newMember.setUser(userToInvite);
         newMember.setRole(request.getRole());
         newMember.setInvitedBy(currentUser);
         newMember.setJoinedAt(LocalDateTime.now());
-        
+
         WorkspaceMember savedMember = workspaceMemberRepository.save(newMember);
 
         ActivityLog activityLog = new ActivityLog();
@@ -238,7 +251,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         activityLog.setAction("MEMBER_INVITED");
         activityLog.setEntityType("WORKSPACE_MEMBER");
         activityLog.setEntityId(savedMember.getId());
-        activityLog.setMetadata(currentUser.getName() + " added " + userToInvite.getName() + " as "+ request.getRole());
+        activityLog
+                .setMetadata(currentUser.getName() + " added " + userToInvite.getName() + " as " + request.getRole());
         activityLogRepository.save(activityLog);
 
         Notification notification = new Notification();
@@ -252,26 +266,26 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         return getWorkspaceMemberResponse(savedMember);
     }
-    
+
     @Override
     @Transactional
     public void removeMember(Long workspaceId, Long userId) {
         User currentUser = getAuthenticateUser();
-        
-        WorkspaceMember currentMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, currentUser.getId())
+
+        WorkspaceMember currentMember = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(workspaceId, currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
-                
+
         if (currentMember.getRole() != WorkspaceRole.OWNER && currentMember.getRole() != WorkspaceRole.ADMIN) {
             throw new BadCredentialsException("Only OWNER or ADMIN can remove members");
         }
-        
+
         WorkspaceMember memberToRemove = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found in workspace"));
-                
+
         if (memberToRemove.getRole() == WorkspaceRole.OWNER && currentMember.getRole() != WorkspaceRole.OWNER) {
             throw new BadCredentialsException("ADMIN cannot remove an OWNER");
         }
-
 
         ActivityLog activityLog = new ActivityLog();
         activityLog.setWorkspace(currentMember.getWorkspace());
@@ -286,30 +300,31 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         notification.setRecipient(memberToRemove.getUser());
         notification.setTitle("Member removed");
-        notification.setMessage("You have been removed from workspace " + currentMember.getWorkspace().getName() + " by " + currentUser.getName());
+        notification.setMessage("You have been removed from workspace " + currentMember.getWorkspace().getName()
+                + " by " + currentUser.getName());
         notification.setType(NotificationType.MEMBER_REMOVED);
         notification.setIsRead(false);
         notificationRepository.save(notification);
 
-
         workspaceMemberRepository.delete(memberToRemove);
     }
-    
+
     @Override
     @Transactional
     public WorkspaceMemberResponse updateMemberRole(Long workspaceId, Long userId, WorkspaceRoleUpdateRequest request) {
         User currentUser = getAuthenticateUser();
-        
-        WorkspaceMember currentMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, currentUser.getId())
+
+        WorkspaceMember currentMember = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(workspaceId, currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
-                
+
         if (currentMember.getRole() != WorkspaceRole.OWNER) {
             throw new BadCredentialsException("Only OWNER can update member roles");
         }
-        
+
         WorkspaceMember memberToUpdate = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found in workspace"));
-                
+
         memberToUpdate.setRole(request.getRole());
         WorkspaceMember updatedMember = workspaceMemberRepository.save(memberToUpdate);
 
@@ -319,7 +334,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         activityLog.setAction("MEMBER_ROLE_CHANGED");
         activityLog.setEntityType("WORKSPACE_MEMBER");
         activityLog.setEntityId(updatedMember.getId());
-        activityLog.setMetadata(updatedMember.getUser().getName() + " role changed by " + currentUser.getName() + " to " + request.getRole());
+        activityLog.setMetadata(updatedMember.getUser().getName() + " role changed by " + currentUser.getName() + " to "
+                + request.getRole());
         activityLogRepository.save(activityLog);
 
         Notification notification = new Notification();
@@ -333,15 +349,15 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         return getWorkspaceMemberResponse(updatedMember);
     }
-    
+
     @Override
     public List<WorkspaceMemberResponse> getWorkspaceMembers(Long workspaceId) {
         User currentUser = getAuthenticateUser();
-        
+
         if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, currentUser.getId())) {
             throw new BadCredentialsException("You are not a member of this workspace");
         }
-        
+
         List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspaceId);
         return members.stream().map(this::getWorkspaceMemberResponse).toList();
     }
@@ -350,7 +366,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     public List<ActivityLogResponse> getWorkspaceActivityLogs(Long workspaceId) {
         User currentUser = getAuthenticateUser();
 
-        WorkspaceMember currentMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, currentUser.getId())
+        WorkspaceMember currentMember = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(workspaceId, currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
         if (currentMember.getRole() != WorkspaceRole.OWNER && currentMember.getRole() != WorkspaceRole.ADMIN) {
@@ -362,7 +379,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         return activityLogs.stream().map(this::mapToActivityLogResponse).toList();
     }
 
-    private ActivityLogResponse mapToActivityLogResponse(ActivityLog activityLog){
+    private ActivityLogResponse mapToActivityLogResponse(ActivityLog activityLog) {
         return ActivityLogResponse.builder()
                 .id(activityLog.getId())
                 .workspaceId(activityLog.getWorkspace().getId())
@@ -376,27 +393,32 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     }
 
     private WorkspaceResponse getWorkspaceResponse(Workspace savedWorkspace) {
+        List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(savedWorkspace.getId());
+        Set<User> users = members.stream().map(WorkspaceMember::getUser).collect(Collectors.toSet());
         WorkspaceResponse response = new WorkspaceResponse();
         response.setId(savedWorkspace.getId());
         response.setName(savedWorkspace.getName());
         response.setSlug(savedWorkspace.getSlug());
         response.setDescription(savedWorkspace.getDescription());
-        response.setOwnerId(savedWorkspace.getOwner().getId());
+        response.setOwner(getUserResponse(savedWorkspace.getOwner()));
         response.setLogoUrl(savedWorkspace.getLogoUrl());
         response.setIsActive(savedWorkspace.getIsActive());
         response.setCreatedAt(savedWorkspace.getCreatedAt());
         response.setUpdatedAt(savedWorkspace.getUpdatedAt());
-        response.setWorkspaceMembers(savedWorkspace.getMembers().stream().map(this::getUserResponse).collect(Collectors.toSet()));
+
+        response.setWorkspaceMembers(users.stream().map(this::getUserResponse).collect(Collectors.toSet()));
         return response;
     }
 
-    private User getAuthenticateUser(){
+    private User getAuthenticateUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
     }
 
     private UserResponse getUserResponse(User user) {
-        if (user == null) return null;
+        if (user == null)
+            return null;
         return UserResponse.builder()
                 .id(user.getId())
                 .name(user.getName())
@@ -409,9 +431,10 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .updatedAt(user.getUpdatedAt())
                 .build();
     }
-    
+
     private WorkspaceMemberResponse getWorkspaceMemberResponse(WorkspaceMember member) {
-        if (member == null) return null;
+        if (member == null)
+            return null;
         return WorkspaceMemberResponse.builder()
                 .id(member.getId())
                 .workspaceId(member.getWorkspace().getId())

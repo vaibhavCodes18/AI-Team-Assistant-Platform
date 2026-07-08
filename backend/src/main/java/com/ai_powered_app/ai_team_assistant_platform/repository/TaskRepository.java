@@ -18,6 +18,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     Page<Task> findByProjectId(Long projectId, Pageable pageable);
 
+    List<Task> findByWorkspaceId(Long workspaceId);
+
     List<Task> findByAssignedToId(Long userId);
 
     @Query("SELECT t FROM Task t JOIN WorkspaceMember wm ON t.workspace.id = wm.workspace.id " +

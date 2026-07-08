@@ -105,7 +105,7 @@ public class AdminServiceImpl implements AdminService {
         response.setName(savedWorkspace.getName());
         response.setSlug(savedWorkspace.getSlug());
         response.setDescription(savedWorkspace.getDescription());
-        response.setOwnerId(savedWorkspace.getOwner().getId());
+        response.setOwner(getUserResponse(savedWorkspace.getOwner()));
         response.setLogoUrl(savedWorkspace.getLogoUrl());
         response.setIsActive(savedWorkspace.getIsActive());
         response.setCreatedAt(savedWorkspace.getCreatedAt());

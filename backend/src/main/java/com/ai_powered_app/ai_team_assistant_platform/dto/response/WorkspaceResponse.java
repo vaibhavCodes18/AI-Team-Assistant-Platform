@@ -19,7 +19,7 @@ public class WorkspaceResponse {
     private String description;
     private String logoUrl;
     private Boolean isActive;
-    private Long ownerId;
+    private UserResponse owner;
     private Set<UserResponse> workspaceMembers;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
