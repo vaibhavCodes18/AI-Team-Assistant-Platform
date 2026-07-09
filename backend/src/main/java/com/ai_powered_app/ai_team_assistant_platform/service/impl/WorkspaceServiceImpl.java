@@ -94,15 +94,19 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         WorkspaceResponse cached = redisService.getRedisWorkspace(workspaceId);
 
-        if (cached != null)
+        if (cached != null) {
+            System.out.println(cached.getName());
             return cached;
+        }
 
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
 
-        redisService.saveRedisWorkspace(workspaceId, getWorkspaceResponse(workspace), Duration.ofMinutes(30L));
+        WorkspaceResponse response = getWorkspaceResponse(workspace);
+        redisService.saveRedisWorkspace(workspaceId, response, Duration.ofMinutes(30L));
+        System.out.println(response.getDescription());
 
-        return getWorkspaceResponse(workspace);
+        return response;
 
     }
 
@@ -132,22 +136,24 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             throw new BadCredentialsException("You do not have permission to update this workspace");
         }
 
-        if (request.getName() != null) {
+        if (request.getName() != null && request.getName() != "") {
             workspace.setName(request.getName());
         }
-        if (request.getSlug() != null) {
+        if (request.getSlug() != null && request.getSlug() != "") {
             workspace.setSlug(request.getSlug());
         }
-        if (request.getDescription() != null) {
+        if (request.getDescription() != null && request.getDescription() != "") {
             workspace.setDescription(request.getDescription());
         }
-        if (request.getLogoUrl() != null) {
+        if (request.getLogoUrl() != null && request.getLogoUrl() != "") {
             workspace.setLogoUrl(request.getLogoUrl());
         }
         if (request.getIsActive() != null) {
             workspace.setIsActive(request.getIsActive());
         }
         Workspace savedWorkspace = workspaceRepository.save(workspace);
+        WorkspaceResponse response = getWorkspaceResponse(savedWorkspace);
+        redisService.saveRedisWorkspace(workspaceId, response, Duration.ofMinutes(30L));
 
         ActivityLog activityLog = new ActivityLog();
         activityLog.setWorkspace(savedWorkspace);
@@ -412,8 +418,9 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
     private User getAuthenticateUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with this email." + email));
     }
 
     private UserResponse getUserResponse(User user) {

@@ -17,6 +17,8 @@ export const getWorkspaceById = async (workspaceId) => {
 }
 
 export const updateWorkspace = async (workspaceId, workspaceData) => {
+    console.log(workspaceData);
+    
     const response = await api.put(`/v1/workspaces/${workspaceId}`, workspaceData);
     return response.data;
 }

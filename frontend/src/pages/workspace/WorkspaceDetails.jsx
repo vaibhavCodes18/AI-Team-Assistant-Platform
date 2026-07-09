@@ -16,6 +16,7 @@ const WorkspaceDetails = () => {
   // Settings States
   const [editForm, setEditForm] = useState({
     name: '',
+    slug: '',
     description: ''
   });
   const [updating, setUpdating] = useState(false);
@@ -48,6 +49,7 @@ const WorkspaceDetails = () => {
         setWorkspace(ws);
         setEditForm({
           name: ws.name || '',
+          slug: ws.slug || '',
           description: ws.description || ''
         });
       } else {
@@ -117,9 +119,15 @@ const WorkspaceDetails = () => {
       const res = await updateWorkspace(id, {
         name: editForm.name,
         description: editForm.description,
-        slug: workspace.slug, // preserve existing slug
+        slug: editForm.slug, // preserve existing slug
         logoUrl: workspace.logoUrl
       });
+      setEditForm({
+        name: res.data.name || editForm.name,
+        description: res.data.description || editForm.description,
+        slug: res.data.slug || editForm.slug, // preserve existing slug
+        logoUrl: workspace.logoUrl
+      })
       if (res?.data) {
         toast.success('Workspace updated successfully!');
         setWorkspace(res.data);
@@ -320,7 +328,7 @@ const WorkspaceDetails = () => {
                     <span className="material-symbols-outlined text-[16px] text-primary">call_merge</span>
                   </div>
                   <div>
-                    <p className="text-on-surface"><span className="font-semibold text-primary">Alex Chen</span> merged <code class="bg-surface-container-highest px-1 rounded text-primary text-xs">feature/auth-provider</code> into <code class="bg-surface-container-highest px-1 rounded text-xs">main</code></p>
+                    <p className="text-on-surface"><span className="font-semibold text-primary">Alex Chen</span> merged <code className="bg-surface-container-highest px-1 rounded text-primary text-xs">feature/auth-provider</code> into <code class="bg-surface-container-highest px-1 rounded text-xs">main</code></p>
                     <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">12 minutes ago • Core-Auth Project</p>
                   </div>
                 </div>
@@ -485,6 +493,19 @@ const WorkspaceDetails = () => {
                     </button>
                   </div>
                 </div>
+                <div className="space-y-sm">
+                  <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block">Slug</label>
+                  <div className="flex items-center gap-md">
+                    <input 
+                      className="flex-1 h-10 px-3 bg-surface-container border border-outline-variant rounded-lg text-on-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none" 
+                      type="text" 
+                      value={editForm.slug}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, slug: e.target.value }))}
+                      required
+                    />
+                  </div>
+                </div>
+    
                 <div className="space-y-xs">
                   <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block">Description</label>
                   <textarea 
@@ -494,6 +515,7 @@ const WorkspaceDetails = () => {
                     onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
                   />
                 </div>
+                
                 <div className="flex items-center gap-md pt-sm">
                   <button 
                     type="button"

@@ -1,6 +1,7 @@
 package com.ai_powered_app.ai_team_assistant_platform.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -11,6 +12,7 @@ public class CorsConfig {
     @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
     private String[] allowedOrigins;
 
+    @Bean
     public WebMvcConfigurer webMvcConfigurer(){
         return new WebMvcConfigurer() {
             @Override
