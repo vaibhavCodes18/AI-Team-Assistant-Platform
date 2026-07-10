@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { fetchUserProfile, logoutUser } from '../../api/authApi';
-import { getWorkspaceById, updateWorkspace, deleteWorkspace, inviteMember } from '../../api/workspaceApi';
+import { getWorkspaceById, updateWorkspace, deleteWorkspace, inviteMember, getAllWorkspaceMembers } from '../../api/workspaceApi';
 import Sidebar from '../../components/layout/Sidebar';
 
 const WorkspaceDetails = () => {
@@ -12,6 +12,7 @@ const WorkspaceDetails = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [workspace, setWorkspace] = useState(null);
+  const [workspaceMembers, setWorkspaceMembers] = useState([])
 
   // Settings States
   const [editForm, setEditForm] = useState({
@@ -44,6 +45,7 @@ const WorkspaceDetails = () => {
 
       // Load workspace details
       const workspaceRes = await getWorkspaceById(id);
+      const workspaceMembersRes = await getAllWorkspaceMembers(id);
       if (workspaceRes?.data) {
         const ws = workspaceRes.data;
         setWorkspace(ws);
@@ -55,6 +57,14 @@ const WorkspaceDetails = () => {
       } else {
         toast.error('Workspace not found');
         navigate('/workspaces');
+      }
+      if(workspaceMembersRes?.data){
+        const members = workspaceMembersRes.data;
+        setWorkspaceMembers(members);
+      }
+      else {
+        toast.error('Workspace not found');
+        navigate(`/workspaces/${id}`);
       }
     } catch (error) {
       console.error('Failed to load workspace details:', error);
@@ -94,18 +104,18 @@ const WorkspaceDetails = () => {
       .toUpperCase();
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return 'N/A';
-    try {
-      return new Date(dateStr).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    } catch (e) {
-      return dateStr;
-    }
-  };
+  // const formatDate = (dateStr) => {
+  //   if (!dateStr) return 'N/A';
+  //   try {
+  //     return new Date(dateStr).toLocaleDateString('en-US', {
+  //       year: 'numeric',
+  //       month: 'long',
+  //       day: 'numeric',
+  //     });
+  //   } catch (e) {
+  //     return dateStr;
+  //   }
+  // };
 
   const handleUpdateSubmit = async (e) => {
     e.preventDefault();
@@ -431,21 +441,21 @@ const WorkspaceDetails = () => {
                 </div>
               </div>
               <div className="divide-y divide-outline-variant overflow-y-auto custom-scrollbar flex-1">
-                {workspace.workspaceMembers && workspace.workspaceMembers.length > 0 ? (
-                  workspace.workspaceMembers.map((member) => (
+                {workspaceMembers && workspaceMembers.length > 0 ? (
+                  workspaceMembers.map((member) => (
                     <div key={member.id} className="px-lg py-md flex items-center justify-between hover:bg-surface-container-highest transition-colors cursor-pointer">
                       <div className="flex items-center gap-md">
                         <div className="w-10 h-10 rounded-full border border-outline-variant bg-surface-container-low overflow-hidden flex items-center justify-center font-bold text-sm">
-                          {member.profileImage ? (
-                            <img className="w-full h-full object-cover" alt={member.name} src={member.profileImage} />
+                          {member.user.profileImage ? (
+                            <img className="w-full h-full object-cover" alt={member.user.name} src={member.user.profileImage} />
                           ) : (
-                            getInitials(member.name)
+                            getInitials(member.user.name)
                           )}
                         </div>
                         <div>
-                          <p className="font-body-md font-semibold text-on-surface">{member.name}</p>
+                          <p className="font-body-md font-semibold text-on-surface">{member.user.name}</p>
                           <p className="font-label-sm text-label-sm text-on-surface-variant">
-                            {member.designation || 'Engineer'} • Member
+                            {member.user.designation || 'Engineer'} • {member.role}
                           </p>
                         </div>
                       </div>
@@ -460,10 +470,10 @@ const WorkspaceDetails = () => {
               </div>
               <div className="p-md bg-surface-container-low/50 text-center border-t border-outline-variant">
                 <button 
-                  onClick={() => toast.success(`Viewing all ${workspace.workspaceMembers?.length || 0} members`)}
+                  onClick={() => toast.success(`Viewing all ${workspaceMembers?.length || 0} members`)}
                   className="font-label-sm text-label-sm text-primary hover:underline"
                 >
-                  Manage All {workspace.workspaceMembers?.length || 0} Members
+                  Manage All {workspaceMembers?.length || 0} Members
                 </button>
               </div>
             </div>

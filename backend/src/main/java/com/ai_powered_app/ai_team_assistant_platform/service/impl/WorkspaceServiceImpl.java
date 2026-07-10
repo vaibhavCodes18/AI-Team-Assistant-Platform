@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -104,10 +103,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         WorkspaceResponse response = getWorkspaceResponse(workspace);
         redisService.saveRedisWorkspace(workspaceId, response, Duration.ofMinutes(30L));
-        System.out.println(response.getDescription());
 
         return response;
-
     }
 
     @Override

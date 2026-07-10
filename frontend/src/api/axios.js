@@ -9,7 +9,6 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
-    console.log('[Axios Interceptor] Token in localStorage:', token);
     if (token) {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
@@ -30,7 +29,6 @@ api.interceptors.response.use(
       const res = await refreshToken();
       
       const newToken = res?.data?.accessToken;
-      console.log('refresh token response: ', res);
 
       if (newToken) {
         localStorage.setItem('accessToken', newToken);
