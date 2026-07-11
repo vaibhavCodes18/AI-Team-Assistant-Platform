@@ -13,8 +13,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class WorkspaceMemberRequest {
 
-    @NotNull(message = "User ID is required")
-    private Long userId;
+    @NotNull(message = "Email is required")
+    private String email;
 
     @NotNull(message = "Workspace role is required")
     private WorkspaceRole role;

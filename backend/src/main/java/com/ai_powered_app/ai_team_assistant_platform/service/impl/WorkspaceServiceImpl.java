@@ -232,10 +232,10 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             throw new BadCredentialsException("Only OWNER or ADMIN can invite members");
         }
 
-        User userToInvite = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User userToInvite = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + request.getEmail()));
 
-        if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, request.getUserId())) {
+        if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userToInvite.getId())) {
             throw new IllegalArgumentException("User is already a member of this workspace");
         }
 

@@ -169,21 +169,22 @@ const WorkspaceDetails = () => {
 
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
-    if (!inviteForm.userId.trim()) {
-      toast.error('User ID is required');
+    if (!inviteForm.email.trim()) {
+      toast.error('Email is required');
       return;
     }
 
     try {
       setInviting(true);
       const res = await inviteMember(id, {
-        userId: parseInt(inviteForm.userId),
+        email: inviteForm.email,
         role: inviteForm.role
       });
+      
       if (res?.data) {
         toast.success('Member invited successfully!');
         setIsInviteModalOpen(false);
-        setInviteForm({ userId: '', role: 'MEMBER' });
+        setInviteForm({ email: '', role: 'MEMBER' });
         // Reload details to update directory
         await loadData();
       }
@@ -597,17 +598,17 @@ const WorkspaceDetails = () => {
             
             <form onSubmit={handleInviteSubmit} className="space-y-md text-left">
               <div className="space-y-xs">
-                <label className="font-label-sm text-on-surface-variant block ml-xs" htmlFor="inviteUserId">
-                  User ID
+                <label className="font-label-sm text-on-surface-variant block ml-xs" htmlFor="inviteEmail">
+                  Email Address
                 </label>
                 <input 
                   className="w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none"
-                  id="inviteUserId"
-                  type="number"
+                  id="inviteEmail"
+                  type="email"
                   required
-                  placeholder="e.g. 42"
-                  value={inviteForm.userId}
-                  onChange={(e) => setInviteForm(prev => ({ ...prev, userId: e.target.value }))}
+                  placeholder="Enter Email"
+                  value={inviteForm.email}
+                  onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
                 />
               </div>
 
