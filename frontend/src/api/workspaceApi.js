@@ -36,3 +36,4 @@ export const inviteMember = async (workspaceId, memberData) => {
     const response = await api.post(`/v1/workspaces/${workspaceId}/members`, memberData);
     return response.data;
 }
+
