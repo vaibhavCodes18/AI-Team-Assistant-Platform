@@ -7,6 +7,7 @@ import ProtectedRoute from "./ProtectedRoute.jsx";
 import Profile from "../pages/profile/Profile.jsx";
 import WorkspaceList from "../pages/workspace/WorkspaceList.jsx";
 import WorkspaceDetails from "../pages/workspace/WorkspaceDetails.jsx";
+import WorkspaceMembers from "../pages/workspace/WorkspaceMembers.jsx";
 
 const AppRoutes = () => {
   return (
@@ -37,6 +38,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <WorkspaceDetails />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/workspaces/:id/members" 
+          element={
+            <ProtectedRoute>
+              <WorkspaceMembers />
             </ProtectedRoute>
           } 
         />

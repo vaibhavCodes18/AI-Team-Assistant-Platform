@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import ManageMemberModal from './ManageMemberModal';
 
 const MemberManagement = ({ workspaceId, workspaceMembers, onSuccess, currentUser }) => {
+  const navigate = useNavigate();
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
 
@@ -92,7 +94,7 @@ const MemberManagement = ({ workspaceId, workspaceMembers, onSuccess, currentUse
       </div>
       <div className="p-md bg-surface-container-low/50 text-center border-t border-outline-variant">
         <button 
-          onClick={() => toast.success(`Viewing all ${workspaceMembers?.length || 0} members`)}
+          onClick={() => navigate(`/workspaces/${workspaceId}/members`)}
           className="font-label-sm text-label-sm text-primary hover:underline"
         >
           Manage All {workspaceMembers?.length || 0} Members
