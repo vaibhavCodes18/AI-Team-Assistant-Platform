@@ -1,6 +1,8 @@
 import { toast } from 'react-hot-toast';
 
-const WorkspaceHeader = ({ workspaceName, workspaceDescription, onInviteClick }) => {
+const WorkspaceHeader = ({ workspaceName, workspaceDescription, onInviteClick, currentUserRole }) => {
+  const isOwnerOrAdmin = currentUserRole === 'OWNER' || currentUserRole === 'ADMIN';
+
   return (
     <header className="flex flex-col md:flex-row md:items-end justify-between gap-lg text-left">
       <div className="space-y-sm">
@@ -26,8 +28,15 @@ const WorkspaceHeader = ({ workspaceName, workspaceDescription, onInviteClick })
         </button>
         <button 
           onClick={onInviteClick}
-          className="px-lg py-sm bg-primary text-on-primary rounded-xl font-body-md font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+          disabled={!isOwnerOrAdmin}
+          className={`px-lg py-sm rounded-xl font-body-md font-semibold transition-all flex items-center gap-xs ${
+            isOwnerOrAdmin 
+              ? 'bg-primary text-on-primary hover:opacity-90 shadow-lg shadow-primary/20 cursor-pointer' 
+              : 'bg-surface-container border border-outline-variant text-on-surface-variant cursor-not-allowed opacity-50'
+          }`}
+          title={isOwnerOrAdmin ? 'Invite new member' : 'Only Owners and Admins can invite members'}
         >
+          {!isOwnerOrAdmin && <span className="material-symbols-outlined text-[18px]">lock</span>}
           Invite Member
         </button>
       </div>

@@ -94,6 +94,10 @@ const WorkspaceDetails = () => {
     );
   }
 
+  const currentMemberObj = workspaceMembers?.find(m => m.user.id === user?.id);
+  const currentUserRole = currentMemberObj?.role;
+  const isOwnerOrAdmin = currentUserRole === 'OWNER' || currentUserRole === 'ADMIN';
+
   if (!workspace) return null;
 
   return (
@@ -136,6 +140,7 @@ const WorkspaceDetails = () => {
             workspaceName={workspace.name}
             workspaceDescription={workspace.description}
             onInviteClick={() => setIsInviteModalOpen(true)}
+            currentUserRole={currentUserRole}
           />
 
           {/* Stats & Visual Bento Grid */}
@@ -147,10 +152,16 @@ const WorkspaceDetails = () => {
 
           {/* Member Management & Workspace Settings Section */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-xl text-left">
-            <MemberManagement workspaceMembers={workspaceMembers} />
+            <MemberManagement 
+              workspaceId={id} 
+              workspaceMembers={workspaceMembers} 
+              onSuccess={loadData}
+              currentUser={user}
+            />
             <EditWorkspace
               workspace={workspace}
               onWorkspaceUpdated={(updatedWs) => setWorkspace(updatedWs)}
+              currentUserRole={currentUserRole}
             />
           </section>
         </main>
@@ -167,8 +178,15 @@ const WorkspaceDetails = () => {
           <span className="text-[10px]">Workspaces</span>
         </Link>
         <button 
-          onClick={() => setIsInviteModalOpen(true)}
-          className="flex flex-col items-center gap-1 text-on-surface-variant"
+          onClick={() => {
+            if (isOwnerOrAdmin) {
+              setIsInviteModalOpen(true);
+            } else {
+              toast.error('Only Owners and Admins can invite members');
+            }
+          }}
+          className={`flex flex-col items-center gap-1 ${isOwnerOrAdmin ? 'text-on-surface-variant' : 'opacity-40 cursor-not-allowed'}`}
+          disabled={!isOwnerOrAdmin}
         >
           <div className="w-10 h-10 -mt-8 bg-primary rounded-full flex items-center justify-center shadow-lg text-on-primary">
             <span className="material-symbols-outlined">add</span>

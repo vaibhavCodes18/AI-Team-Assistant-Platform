@@ -37,3 +37,14 @@ export const inviteMember = async (workspaceId, memberData) => {
     return response.data;
 }
 
+export const removeWorkspaceMember = async (workspaceId, userId) => {
+    const response = await api.delete(`/v1/workspaces/${workspaceId}/members/${userId}`);
+    return response.data;
+};
+
+export const updateWorkspaceMemberRole = async (workspaceId, userId, roleData) => {
+    const response = await api.patch(`/v1/workspaces/${workspaceId}/members/${userId}/role`, roleData);
+    return response.data;
+};
+
+

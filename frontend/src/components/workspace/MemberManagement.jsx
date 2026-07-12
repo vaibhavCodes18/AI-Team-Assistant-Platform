@@ -1,6 +1,11 @@
+import { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import ManageMemberModal from './ManageMemberModal';
 
-const MemberManagement = ({ workspaceMembers }) => {
+const MemberManagement = ({ workspaceId, workspaceMembers, onSuccess, currentUser }) => {
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
+
   const getInitials = (name) => {
     if (!name) return 'U';
     return name
@@ -10,6 +15,9 @@ const MemberManagement = ({ workspaceMembers }) => {
       .join('')
       .toUpperCase();
   };
+
+  const currentMemberObj = workspaceMembers?.find(m => m.user.id === currentUser?.id);
+  const currentUserRole = currentMemberObj?.role;
 
   return (
     <div className="glass-card rounded-xl overflow-hidden flex flex-col h-[400px]">
@@ -57,7 +65,23 @@ const MemberManagement = ({ workspaceMembers }) => {
                   </p>
                 </div>
               </div>
-              <span className="material-symbols-outlined text-on-surface-variant">more_vert</span>
+              {member.user.id !== currentUser?.id ? (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedMember(member);
+                    setIsManageModalOpen(true);
+                  }}
+                  className="p-xs hover:bg-surface-container-high rounded-full text-on-surface-variant hover:text-on-surface transition-all flex items-center justify-center"
+                  title="Manage Member"
+                >
+                  <span className="material-symbols-outlined text-on-surface-variant">more_vert</span>
+                </button>
+              ) : (
+                <span className="text-xs text-primary font-semibold px-md py-1 bg-primary/10 rounded-full">
+                  You
+                </span>
+              )}
             </div>
           ))
         ) : (
@@ -74,8 +98,21 @@ const MemberManagement = ({ workspaceMembers }) => {
           Manage All {workspaceMembers?.length || 0} Members
         </button>
       </div>
+
+      <ManageMemberModal
+        isOpen={isManageModalOpen}
+        onClose={() => {
+          setIsManageModalOpen(false);
+          setSelectedMember(null);
+        }}
+        member={selectedMember}
+        workspaceId={workspaceId}
+        currentUserRole={currentUserRole}
+        onSuccess={onSuccess}
+      />
     </div>
   );
 };
 
 export default MemberManagement;
+

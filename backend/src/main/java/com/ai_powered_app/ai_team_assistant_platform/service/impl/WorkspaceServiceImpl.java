@@ -130,7 +130,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
         if (member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN) {
-            throw new BadCredentialsException("You do not have permission to update this workspace");
+            throw new BadCredentialsException("You do not have permission to update this workspace only OWNER or ADMIN can update this workspace");
         }
 
         if (request.getName() != null && request.getName() != "") {
