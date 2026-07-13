@@ -105,4 +105,12 @@ public class WorkspaceController {
         ApiResponse<List<ActivityLogResponse>> apiRes = new ApiResponse<>(200, "Activity logs Fetched", response);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
+
+    @GetMapping("/{workspaceId}/recent-activities")
+    public ResponseEntity<ApiResponse<List<ActivityLogResponse>>> getRecentActivityLogs(
+            @PathVariable("workspaceId") Long workspaceId) {
+        List<ActivityLogResponse> response = workspaceService.getWorkspaceRecentLogs(workspaceId);
+        ApiResponse<List<ActivityLogResponse>> apiRes = new ApiResponse<>(200, "Recent activity logs Fetched", response);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
 }

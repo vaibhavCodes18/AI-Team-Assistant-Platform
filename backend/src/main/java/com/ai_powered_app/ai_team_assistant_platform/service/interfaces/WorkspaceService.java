@@ -17,4 +17,5 @@ public interface WorkspaceService {
     WorkspaceMemberResponse updateMemberRole(Long workspaceId, Long userId, WorkspaceRoleUpdateRequest request);
     List<WorkspaceMemberResponse> getWorkspaceMembers(Long workspaceId);
     List<ActivityLogResponse> getWorkspaceActivityLogs(Long workspaceId);
+    List<ActivityLogResponse> getWorkspaceRecentLogs(Long workspaceId);
 }

@@ -382,6 +382,19 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         return activityLogs.stream().map(this::mapToActivityLogResponse).toList();
     }
 
+    @Override
+    public List<ActivityLogResponse> getWorkspaceRecentLogs(Long workspaceId) {
+        User currentUser = getAuthenticateUser();
+
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, currentUser.getId())) {
+            throw new BadCredentialsException("You are not a member of this workspace");
+        }
+
+        List<ActivityLog> activityLogs = activityLogRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId);
+
+        return activityLogs.stream().map(this::mapToActivityLogResponse).limit(5).toList();
+    }
+
     private ActivityLogResponse mapToActivityLogResponse(ActivityLog activityLog) {
         return ActivityLogResponse.builder()
                 .id(activityLog.getId())

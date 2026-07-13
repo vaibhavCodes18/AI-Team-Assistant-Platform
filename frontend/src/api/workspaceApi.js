@@ -47,4 +47,13 @@ export const updateWorkspaceMemberRole = async (workspaceId, userId, roleData) =
     return response.data;
 };
 
+export const getWorkspaceActivityLogs = async (workspaceId) => {
+    const response = await api.get(`/v1/workspaces/${workspaceId}/activities`);
+    return response.data;
+};
+
+export const getWorkspaceRecentActivities = async (workspaceId) => {
+    const response = await api.get(`/v1/workspaces/${workspaceId}/recent-activities`);
+    return response.data;
+};
 

@@ -1,6 +1,6 @@
 import { toast } from 'react-hot-toast';
 
-const WorkspaceHeader = ({ workspaceName, workspaceDescription, onInviteClick, currentUserRole }) => {
+const WorkspaceHeader = ({ workspaceName, workspaceDescription, onInviteClick, onViewLogsClick, currentUserRole }) => {
   const isOwnerOrAdmin = currentUserRole === 'OWNER' || currentUserRole === 'ADMIN';
 
   return (
@@ -21,9 +21,16 @@ const WorkspaceHeader = ({ workspaceName, workspaceDescription, onInviteClick, c
       </div>
       <div className="flex gap-md pb-xs">
         <button 
-          onClick={() => toast.success('Logs are up-to-date')}
-          className="px-lg py-sm border border-outline-variant rounded-xl font-body-md font-semibold text-on-surface hover:bg-surface-container-high transition-colors"
+          onClick={onViewLogsClick}
+          disabled={!isOwnerOrAdmin}
+          className={`px-lg py-sm rounded-xl font-body-md font-semibold transition-all flex items-center gap-xs border ${
+            isOwnerOrAdmin 
+              ? 'border-outline-variant text-on-surface hover:bg-surface-container-high cursor-pointer' 
+              : 'bg-surface-container border-outline-variant text-on-surface-variant cursor-not-allowed opacity-50'
+          }`}
+          title={isOwnerOrAdmin ? 'View Workspace activity logs' : 'Only Owners and Admins can view logs'}
         >
+          {!isOwnerOrAdmin && <span className="material-symbols-outlined text-[18px]">lock</span>}
           View Logs
         </button>
         <button 

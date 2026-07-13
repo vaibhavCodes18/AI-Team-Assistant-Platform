@@ -32,8 +32,8 @@ const InviteMemberModal = ({ isOpen, onClose, workspaceId, workspaceName, onSucc
         onClose();
       }
     } catch (error) {
-      console.error('Failed to invite member:', error);
-      toast.error(error.response?.data?.message || 'Failed to invite member');
+      console.error('Failed to invite member:', error);      
+      toast.error(error.response?.data?.msg || 'Failed to invite member');
     } finally {
       setInviting(false);
     }

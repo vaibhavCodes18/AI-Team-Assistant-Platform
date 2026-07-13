@@ -5,6 +5,7 @@ import { fetchUserProfile, logoutUser } from '../../api/authApi';
 import { getWorkspaceById, getAllWorkspaceMembers } from '../../api/workspaceApi';
 import Sidebar from '../../components/layout/Sidebar';
 import InviteMemberModal from '../../components/workspace/InviteMemberModal';
+import ViewLogsModal from '../../components/workspace/ViewLogsModal';
 import WorkspaceHeader from '../../components/workspace/WorkspaceHeader';
 import StatsBentoGrid from '../../components/workspace/StatsBentoGrid';
 import SystemActivity from '../../components/workspace/SystemActivity';
@@ -21,6 +22,7 @@ const WorkspaceDetails = () => {
   const [workspace, setWorkspace] = useState(null);
   const [workspaceMembers, setWorkspaceMembers] = useState([]);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isViewLogsModalOpen, setIsViewLogsModalOpen] = useState(false);
 
   const loadData = async () => {
     try {
@@ -140,13 +142,19 @@ const WorkspaceDetails = () => {
             workspaceName={workspace.name}
             workspaceDescription={workspace.description}
             onInviteClick={() => setIsInviteModalOpen(true)}
+            onViewLogsClick={() => setIsViewLogsModalOpen(true)}
             currentUserRole={currentUserRole}
           />
 
           {/* Stats & Visual Bento Grid */}
           <section className="grid grid-cols-12 gap-lg text-left">
             <StatsBentoGrid memberCount={workspaceMembers?.length || 0} />
-            <SystemActivity />
+            <SystemActivity 
+              workspaceId={id} 
+              workspaceMembers={workspaceMembers} 
+              onViewLogsClick={() => setIsViewLogsModalOpen(true)}
+              currentUserRole={currentUserRole}
+            />
             <QuickControls />
           </section>
 
@@ -210,6 +218,14 @@ const WorkspaceDetails = () => {
         workspaceId={id}
         workspaceName={workspace.name}
         onSuccess={loadData}
+      />
+
+      {/* View Logs Modal */}
+      <ViewLogsModal
+        isOpen={isViewLogsModalOpen}
+        onClose={() => setIsViewLogsModalOpen(false)}
+        workspaceId={id}
+        workspaceMembers={workspaceMembers}
       />
     </div>
   );
