@@ -24,19 +24,33 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error?.config;
-    if (error?.response?.status === 401 && !originalRequest?._retry) {
+    
+    // If the error is a 401 and we haven't retried yet, AND it's not a refresh token request itself
+    if (
+      error?.response?.status === 401 && 
+      !originalRequest?._retry && 
+      originalRequest?.url && 
+      !originalRequest.url.includes('/auth/refresh')
+    ) {
       originalRequest._retry = true;
-      const res = await refreshToken();
-      
-      const newToken = res?.data?.accessToken;
+      try {
+        const res = await refreshToken();
+        const newToken = res?.data?.accessToken;
 
-      if (newToken) {
-        localStorage.setItem('accessToken', newToken);
+        if (newToken) {
+          localStorage.setItem('accessToken', newToken);
+          originalRequest.headers = originalRequest.headers || {};
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        console.error('Session expired. Redirecting to login...', refreshError);
+        localStorage.removeItem('accessToken');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
       }
-      originalRequest.headers.Authorization = `Bearer ${newToken}`;
-
-      return api(originalRequest)
     }
+    
     return Promise.reject(error);
   }
 );
