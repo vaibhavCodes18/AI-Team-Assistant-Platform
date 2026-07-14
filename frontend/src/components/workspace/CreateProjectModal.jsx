@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { createProject } from '../../api/projectApi';
 
-const CreateProjectModal = ({ isOpen, onClose, workspaceId, onSuccess }) => {
+const CreateProjectModal = ({ isOpen, onClose, workspaceId, onSuccess, isOwnerOrAdmin }) => {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: '',
@@ -14,6 +14,11 @@ const CreateProjectModal = ({ isOpen, onClose, workspaceId, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isOwnerOrAdmin) {
+      toast.error('Only Workspace Owners and Admins can create projects');
+      onClose();
+      return;
+    }
     if (!form.name.trim()) {
       toast.error('Project name is required');
       return;
@@ -52,7 +57,7 @@ const CreateProjectModal = ({ isOpen, onClose, workspaceId, onSuccess }) => {
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !isOwnerOrAdmin) return null;
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-md">

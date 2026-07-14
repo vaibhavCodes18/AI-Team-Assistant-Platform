@@ -93,6 +93,14 @@ const WorkspaceDetails = () => {
     }
   };
 
+  const handleOpenCreateProjectModal = () => {
+    if (isOwnerOrAdmin) {
+      setIsCreateProjectModalOpen(true);
+    } else {
+      toast.error('Only Workspace Owners and Admins can create projects');
+    }
+  };
+
   const getInitials = (name) => {
     if (!name) return 'U';
     return name
@@ -181,7 +189,7 @@ const WorkspaceDetails = () => {
           <RecentProjects
             projects={projects}
             workspaceMembers={workspaceMembers}
-            onNewProjectClick={() => setIsCreateProjectModalOpen(true)}
+            onNewProjectClick={handleOpenCreateProjectModal}
             isOwnerOrAdmin={isOwnerOrAdmin}
           />
 
@@ -256,6 +264,7 @@ const WorkspaceDetails = () => {
         onClose={() => setIsCreateProjectModalOpen(false)}
         workspaceId={id}
         onSuccess={loadData}
+        isOwnerOrAdmin={isOwnerOrAdmin}
       />
 
       {/* View Logs Modal */}
