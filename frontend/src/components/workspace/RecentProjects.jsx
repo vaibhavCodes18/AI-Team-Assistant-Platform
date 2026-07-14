@@ -1,6 +1,8 @@
 import { toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
-const RecentProjects = ({ projects, workspaceMembers, onNewProjectClick, isOwnerOrAdmin }) => {
+const RecentProjects = ({ workspaceId, projects, workspaceMembers, onNewProjectClick, isOwnerOrAdmin }) => {
+  const navigate = useNavigate();
   // Use splice to extract the top 4 projects (after copying to avoid mutating state directly)
   const displayProjects = [...projects].splice(0, 4);
 
@@ -109,8 +111,8 @@ const RecentProjects = ({ projects, workspaceMembers, onNewProjectClick, isOwner
             </button>
           )}
           <button 
-            onClick={() => toast.success('View all projects coming soon!')}
-            className="text-primary font-label-sm text-label-sm hover:underline cursor-pointer"
+            onClick={() => navigate(`/workspaces/${workspaceId}/projects`)}
+            className="text-primary font-label-sm text-label-sm hover:underline cursor-pointer bg-transparent border-none outline-none"
           >
             View All Projects
           </button>

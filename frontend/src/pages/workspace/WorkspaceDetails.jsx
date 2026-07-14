@@ -187,6 +187,7 @@ const WorkspaceDetails = () => {
 
           {/* Recent Projects Section */}
           <RecentProjects
+            workspaceId={id}
             projects={projects}
             workspaceMembers={workspaceMembers}
             onNewProjectClick={handleOpenCreateProjectModal}

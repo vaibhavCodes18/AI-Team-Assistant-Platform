@@ -8,6 +8,7 @@ import Profile from "../pages/profile/Profile.jsx";
 import WorkspaceList from "../pages/workspace/WorkspaceList.jsx";
 import WorkspaceDetails from "../pages/workspace/WorkspaceDetails.jsx";
 import WorkspaceMembers from "../pages/workspace/WorkspaceMembers.jsx";
+import WorkspaceProjects from "../pages/workspace/WorkspaceProjects.jsx";
 
 const AppRoutes = () => {
   return (
@@ -46,6 +47,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <WorkspaceMembers />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/workspaces/:id/projects" 
+          element={
+            <ProtectedRoute>
+              <WorkspaceProjects />
             </ProtectedRoute>
           } 
         />
