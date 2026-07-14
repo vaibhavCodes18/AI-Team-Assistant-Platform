@@ -11,6 +11,7 @@ import com.ai_powered_app.ai_team_assistant_platform.entity.ActivityLog;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Notification;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
 import com.ai_powered_app.ai_team_assistant_platform.enums.NotificationType;
+import com.ai_powered_app.ai_team_assistant_platform.enums.ProjectStatus;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.repository.ProjectRepository;
@@ -25,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -62,7 +64,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
         if (member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN) {
-            throw new BadCredentialsException("You do not have permission to create this project");
+            throw new BadCredentialsException("You do not have permission to create this project only OWNER or ADMIN can create this project");
         }
 
         Project project = setProject(projectRequest, workspace, currentUser);
@@ -119,7 +121,7 @@ public class ProjectServiceImpl implements ProjectService {
             throw new BadCredentialsException("You are not a member of this workspace");
         }
 
-        List<Project> allProjects = projectRepository.findByWorkspaceId(workspace.getId());
+        List<Project> allProjects = projectRepository.findByWorkspaceIdOrderByUpdatedAtDesc(workspace.getId());
 
         return allProjects.stream().map(this::getProjectResponse).collect(Collectors.toList());
     }
@@ -146,12 +148,6 @@ public class ProjectServiceImpl implements ProjectService {
         }
         if(updateProjectRequest.getStatus() != null){
             project.setStatus(updateProjectRequest.getStatus());
-        }
-        if(updateProjectRequest.getStartDate() != null){
-            project.setStartDate(updateProjectRequest.getStartDate());
-        }
-        if(updateProjectRequest.getDeadline() != null){
-            project.setDeadline(updateProjectRequest.getDeadline());
         }
         Project updatedProject = projectRepository.save(project);
 
@@ -206,12 +202,14 @@ public class ProjectServiceImpl implements ProjectService {
 
         if(projectRequest.getStatus() != null){
             project.setStatus(projectRequest.getStatus());
+        }else{
+            project.setStatus(ProjectStatus.ACTIVE);
         }
-
         if(projectRequest.getStartDate() != null){
             project.setStartDate(projectRequest.getStartDate());
+        }else{
+            project.setStartDate(LocalDate.now());
         }
-
         if(projectRequest.getDeadline() != null){
             project.setDeadline(projectRequest.getDeadline());
         }
@@ -228,6 +226,8 @@ public class ProjectServiceImpl implements ProjectService {
                 .createdById(project.getCreatedBy().getId())
                 .startDate(project.getStartDate())
                 .deadline(project.getDeadline())
+                .createdAt(project.getCreatedAt())
+                .updatedAt(project.getUpdatedAt())
                 .build();
     }
 

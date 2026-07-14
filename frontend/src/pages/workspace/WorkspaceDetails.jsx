@@ -3,8 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { fetchUserProfile, logoutUser } from '../../api/authApi';
 import { getWorkspaceById, getAllWorkspaceMembers } from '../../api/workspaceApi';
+import { getWorkspaceProjects } from '../../api/projectApi';
 import Sidebar from '../../components/layout/Sidebar';
 import InviteMemberModal from '../../components/workspace/InviteMemberModal';
+import CreateProjectModal from '../../components/workspace/CreateProjectModal';
 import ViewLogsModal from '../../components/workspace/ViewLogsModal';
 import WorkspaceHeader from '../../components/workspace/WorkspaceHeader';
 import StatsBentoGrid from '../../components/workspace/StatsBentoGrid';
@@ -12,6 +14,7 @@ import SystemActivity from '../../components/workspace/SystemActivity';
 import QuickControls from '../../components/workspace/QuickControls';
 import MemberManagement from '../../components/workspace/MemberManagement';
 import EditWorkspace from '../../components/workspace/EditWorkspace';
+import RecentProjects from '../../components/workspace/RecentProjects';
 
 const WorkspaceDetails = () => {
   const { id } = useParams();
@@ -21,8 +24,11 @@ const WorkspaceDetails = () => {
   const [loading, setLoading] = useState(true);
   const [workspace, setWorkspace] = useState(null);
   const [workspaceMembers, setWorkspaceMembers] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
   const [isViewLogsModalOpen, setIsViewLogsModalOpen] = useState(false);
+  const [activityTrigger, setActivityTrigger] = useState(0);
 
   const loadData = async () => {
     try {
@@ -47,6 +53,18 @@ const WorkspaceDetails = () => {
         toast.error('Workspace not found');
         navigate(`/workspaces/${id}`);
       }
+      
+      // Load workspace projects
+      try {
+        const projectsRes = await getWorkspaceProjects(id);
+        if (projectsRes?.data) {
+          setProjects(projectsRes.data);
+        }
+      } catch (projectError) {
+        console.error('Failed to load workspace projects:', projectError);
+      }
+      
+      setActivityTrigger((prev) => prev + 1);
     } catch (error) {
       console.error('Failed to load workspace details:', error);
       toast.error('Failed to fetch workspace information');
@@ -154,9 +172,18 @@ const WorkspaceDetails = () => {
               workspaceMembers={workspaceMembers} 
               onViewLogsClick={() => setIsViewLogsModalOpen(true)}
               currentUserRole={currentUserRole}
+              refreshTrigger={activityTrigger}
             />
             <QuickControls />
           </section>
+
+          {/* Recent Projects Section */}
+          <RecentProjects
+            projects={projects}
+            workspaceMembers={workspaceMembers}
+            onNewProjectClick={() => setIsCreateProjectModalOpen(true)}
+            isOwnerOrAdmin={isOwnerOrAdmin}
+          />
 
           {/* Member Management & Workspace Settings Section */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-xl text-left">
@@ -168,7 +195,10 @@ const WorkspaceDetails = () => {
             />
             <EditWorkspace
               workspace={workspace}
-              onWorkspaceUpdated={(updatedWs) => setWorkspace(updatedWs)}
+              onWorkspaceUpdated={(updatedWs) => {
+                setWorkspace(updatedWs);
+                loadData();
+              }}
               currentUserRole={currentUserRole}
             />
           </section>
@@ -217,6 +247,14 @@ const WorkspaceDetails = () => {
         onClose={() => setIsInviteModalOpen(false)}
         workspaceId={id}
         workspaceName={workspace.name}
+        onSuccess={loadData}
+      />
+
+      {/* Create Project Modal */}
+      <CreateProjectModal
+        isOpen={isCreateProjectModalOpen}
+        onClose={() => setIsCreateProjectModalOpen(false)}
+        workspaceId={id}
         onSuccess={loadData}
       />
 

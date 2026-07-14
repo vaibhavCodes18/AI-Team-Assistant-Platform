@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getWorkspaceRecentActivities } from '../../api/workspaceApi';
 import { toast } from 'react-hot-toast';
 
-const SystemActivity = ({ workspaceId, workspaceMembers, onViewLogsClick, currentUserRole }) => {
+const SystemActivity = ({ workspaceId, workspaceMembers, onViewLogsClick, currentUserRole, refreshTrigger }) => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -30,7 +30,7 @@ const SystemActivity = ({ workspaceId, workspaceMembers, onViewLogsClick, curren
 
   useEffect(() => {
     fetchRecentActivities();
-  }, [workspaceId]);
+  }, [workspaceId, refreshTrigger]);
 
   const getUserDetails = (userId) => {
     const member = workspaceMembers?.find((m) => m.user.id === userId);

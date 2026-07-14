@@ -1,5 +1,7 @@
 package com.ai_powered_app.ai_team_assistant_platform.dto.request;
 
+import java.time.LocalDate;
+
 import com.ai_powered_app.ai_team_assistant_platform.enums.ProjectStatus;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotBlank;
@@ -10,7 +12,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
 
 @Data
 @Builder
@@ -32,7 +33,10 @@ public class ProjectRequest {
     @Nullable
     private ProjectStatus status;
 
+    @Nullable
     private LocalDate startDate;
 
+    @Nullable
     private LocalDate deadline;
+
 }
