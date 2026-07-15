@@ -1,6 +1,6 @@
 package com.ai_powered_app.ai_team_assistant_platform.controller;
 
-import com.ai_powered_app.ai_team_assistant_platform.dto.request.InviteUserInProjectResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.InviteUserInProjectRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.ProjectRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateProjectRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectMemberResponse;
@@ -61,7 +61,7 @@ public class ProjectController {
     }
 
     @PostMapping("/{projectId}/members")
-    public ResponseEntity<ApiResponse<List<ProjectMemberResponse>>> inviteUserToProject(@PathVariable("projectId") Long projectId, @Valid @RequestBody InviteUserInProjectResponse inviteUserInProjectResponse ){
+    public ResponseEntity<ApiResponse<List<ProjectMemberResponse>>> inviteUserToProject(@PathVariable("projectId") Long projectId, @Valid @RequestBody InviteUserInProjectRequest inviteUserInProjectResponse ){
         List<ProjectMemberResponse> projectResponse = projectService.inviteUserToProject(projectId, inviteUserInProjectResponse.getEmails());
 
         ApiResponse<List<ProjectMemberResponse>> apiRes = new ApiResponse<>(200, "Project members invited successfully", projectResponse);

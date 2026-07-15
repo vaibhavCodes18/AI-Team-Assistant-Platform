@@ -9,6 +9,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class InviteUserInProjectResponse {
+public class InviteUserInProjectRequest {
     List<String> emails;
 }
