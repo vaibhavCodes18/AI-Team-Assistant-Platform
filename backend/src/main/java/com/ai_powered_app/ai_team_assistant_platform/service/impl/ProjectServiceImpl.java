@@ -2,8 +2,11 @@ package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.ProjectRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateProjectRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectMemberResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Project;
+import com.ai_powered_app.ai_team_assistant_platform.entity.ProjectMember;
 import com.ai_powered_app.ai_team_assistant_platform.entity.User;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Workspace;
 import com.ai_powered_app.ai_team_assistant_platform.entity.WorkspaceMember;
@@ -11,6 +14,7 @@ import com.ai_powered_app.ai_team_assistant_platform.entity.ActivityLog;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Notification;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
 import com.ai_powered_app.ai_team_assistant_platform.enums.NotificationType;
+import com.ai_powered_app.ai_team_assistant_platform.enums.ProjectRole;
 import com.ai_powered_app.ai_team_assistant_platform.enums.ProjectStatus;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
@@ -20,6 +24,7 @@ import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceMemberR
 import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.ActivityLogRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.NotificationRepository;
+import com.ai_powered_app.ai_team_assistant_platform.repository.ProjectMemberRepository;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.ProjectService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +34,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,6 +58,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Autowired
     private NotificationRepository notificationRepository;
 
+    @Autowired
+    private ProjectMemberRepository projectMemberRepository;
+
     @Override
     @Transactional
     public ProjectResponse createProject(ProjectRequest projectRequest) {
@@ -69,6 +78,12 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project project = setProject(projectRequest, workspace, currentUser);
         Project savedProject = projectRepository.save(project);
+
+        ProjectMember projectMember = new ProjectMember();
+        projectMember.setProject(savedProject);
+        projectMember.setUser(currentUser);
+        projectMember.setRole(ProjectRole.PROJECT_ADMIN);
+        projectMemberRepository.save(projectMember);
 
         ActivityLog activityLog = new ActivityLog();
         activityLog.setWorkspace(workspace);
@@ -124,6 +139,90 @@ public class ProjectServiceImpl implements ProjectService {
         List<Project> allProjects = projectRepository.findByWorkspaceIdOrderByUpdatedAtDesc(workspace.getId());
 
         return allProjects.stream().map(this::getProjectResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProjectMemberResponse> getProjectMembers(Long projectId){
+        User currentUser = getAuthenticateUser();
+
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+        WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceAndUser(project.getWorkspace(), currentUser)
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+
+        // only workspace owner, admin or project member 
+        if(workspaceMember.getRole() != WorkspaceRole.OWNER && workspaceMember.getRole() != WorkspaceRole.ADMIN && !projectMemberRepository.existsByProjectIdAndUserId(projectId, currentUser.getId())){
+            throw new BadCredentialsException("You are not authorized to view this project");
+        }
+
+        List<ProjectMember> projectMembers = projectMemberRepository.findByProjectId(projectId);
+
+        return projectMembers.stream().map(this::getProjectMemberResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProjectMemberResponse> inviteUserToProject(Long projectId, List<String> emails){
+        User currentUser = getAuthenticateUser();
+
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+        WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceAndUser(project.getWorkspace(), currentUser)
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+
+        boolean isAuthorized = false;
+        if (workspaceMember.getRole() == WorkspaceRole.OWNER || workspaceMember.getRole() == WorkspaceRole.ADMIN) {
+            isAuthorized = true;
+        } else {
+            Optional<ProjectMember> projectMemberOpt = projectMemberRepository.findByProjectIdAndUserId(projectId, currentUser.getId());
+            if (projectMemberOpt.isPresent() && projectMemberOpt.get().getRole() == ProjectRole.PROJECT_ADMIN) {
+                isAuthorized = true;
+            }
+        }
+
+        if (!isAuthorized) {
+            throw new BadCredentialsException("You are not authorized to invite user to this project");
+        }
+
+        List<ProjectMember> members = new ArrayList<>();
+        for (String email : emails) {
+            User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+            if(!workspaceMemberRepository.existsByWorkspaceIdAndUserId(project.getWorkspace().getId(), user.getId())){
+                throw new BadCredentialsException("User is not a member of this workspace");
+            }
+
+            if(projectMemberRepository.existsByProjectIdAndUserId(project.getId(), user.getId())){
+                throw new BadCredentialsException("User is already a member of this project");
+            }
+
+            ProjectMember projectMember = new ProjectMember();
+            projectMember.setProject(project);
+            projectMember.setUser(user);
+            projectMember.setRole(ProjectRole.CONTRIBUTOR);        
+            
+            members.add(projectMember);
+
+            ActivityLog activityLog = new ActivityLog();
+            activityLog.setWorkspace(project.getWorkspace());
+            activityLog.setUser(currentUser);
+            activityLog.setAction("USER_ADDED_TO_PROJECT");
+            activityLog.setEntityType("PROJECT");
+            activityLog.setEntityId(project.getId());
+            activityLog.setMetadata(currentUser.getName() + " added user " + user.getName() + " to project " + project.getName());
+            activityLogRepository.save(activityLog);
+
+            Notification notification = new Notification();
+            notification.setRecipient(user);
+            notification.setTitle("Added to Project");
+            notification.setMessage("You have been added to project " + project.getName() + " by " + currentUser.getName());
+            notification.setType(NotificationType.PROJECT_UPDATED);
+            notification.setIsRead(false);
+            notificationRepository.save(notification);
+        }
+        List<ProjectMember> savedMembers = projectMemberRepository.saveAll(members);
+        
+        return savedMembers.stream().map(this::getProjectMemberResponse).collect(Collectors.toList());
     }
 
     @Override
@@ -214,6 +313,32 @@ public class ProjectServiceImpl implements ProjectService {
             project.setDeadline(projectRequest.getDeadline());
         }
         return project;
+    }
+
+    private ProjectMemberResponse getProjectMemberResponse(ProjectMember projectMember){
+        return ProjectMemberResponse.builder()
+                .id(projectMember.getId())
+                .projectId(projectMember.getProject().getId())
+                .user(getUserResponse(projectMember.getUser()))
+                .role(projectMember.getRole())
+                .build();
+    }
+    
+    private UserResponse getUserResponse(User user) {
+        if (user == null)
+            return null;
+        return UserResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .provider(user.getProvider())
+                .profileImage(user.getProfileImage())
+                .platformRole(user.getPlatformRole())
+                .designation(user.getDesignation())
+                .isActive(user.getIsActive())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
     }
 
     private ProjectResponse getProjectResponse(Project project){

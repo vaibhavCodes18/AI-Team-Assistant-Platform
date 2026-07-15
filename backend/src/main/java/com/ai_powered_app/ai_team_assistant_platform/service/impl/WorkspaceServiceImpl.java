@@ -181,7 +181,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         }
 
         List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspaceId);
-        List<Project> projects = projectRepository.findByWorkspaceId(workspaceId);
+        List<Project> projects = projectRepository.findByWorkspaceIdOrderByUpdatedAtDesc(workspaceId);
         List<AIRequest> aiRequests = aiRequestRepository.findByWorkspaceId(workspaceId);
         List<Document> documents = documentRepository.findByWorkspaceId(workspaceId);
         List<Task> tasks = taskRepository.findByWorkspaceId(workspaceId);

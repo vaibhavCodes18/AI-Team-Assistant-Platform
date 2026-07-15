@@ -1,7 +1,9 @@
 package com.ai_powered_app.ai_team_assistant_platform.controller;
 
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.InviteUserInProjectResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.ProjectRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateProjectRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectMemberResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TaskResponse;
 import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
@@ -47,6 +49,22 @@ public class ProjectController {
         List<ProjectResponse> projectResponse = projectService.getWorkspaceProjects(workspaceId);
 
         ApiResponse<List<ProjectResponse>> apiRes = new ApiResponse<>(200, "All projects fetched", projectResponse);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
+
+    @GetMapping("/{projectId}/members")
+    public ResponseEntity<ApiResponse<List<ProjectMemberResponse>>> getProjectMembers(@PathVariable("projectId") Long projectId){
+        List<ProjectMemberResponse> projectResponse = projectService.getProjectMembers(projectId);
+
+        ApiResponse<List<ProjectMemberResponse>> apiRes = new ApiResponse<>(200, "Project members fetched successfully", projectResponse);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
+
+    @PostMapping("/{projectId}/members")
+    public ResponseEntity<ApiResponse<List<ProjectMemberResponse>>> inviteUserToProject(@PathVariable("projectId") Long projectId, @Valid @RequestBody InviteUserInProjectResponse inviteUserInProjectResponse ){
+        List<ProjectMemberResponse> projectResponse = projectService.inviteUserToProject(projectId, inviteUserInProjectResponse.getEmails());
+
+        ApiResponse<List<ProjectMemberResponse>> apiRes = new ApiResponse<>(200, "Project members invited successfully", projectResponse);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 
