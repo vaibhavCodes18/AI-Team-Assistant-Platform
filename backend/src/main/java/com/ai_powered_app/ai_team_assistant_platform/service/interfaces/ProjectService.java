@@ -12,6 +12,7 @@ public interface ProjectService {
      ProjectResponse getProjectById(Long projectId);
      List<ProjectMemberResponse> getProjectMembers(Long projectId);
      List<ProjectMemberResponse> inviteUserToProject(Long projectId, List<String> emails);
+     void removeMemberFromProject(Long projectId, Long userId);
      List<ProjectResponse> getWorkspaceProjects(Long workspaceId);
      ProjectResponse updateProject(Long projectId, UpdateProjectRequest updateProjectRequest);
      void deleteProject(Long projectId);

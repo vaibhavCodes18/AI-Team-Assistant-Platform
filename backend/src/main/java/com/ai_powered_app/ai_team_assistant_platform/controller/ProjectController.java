@@ -37,7 +37,7 @@ public class ProjectController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProjectResponse>> getProject(@PathVariable("id") Long id){
+    public ResponseEntity<ApiResponse<ProjectResponse>> getProjectById(@PathVariable("id") Long id){
         ProjectResponse projectResponse = projectService.getProjectById(id);
 
         ApiResponse<ProjectResponse> apiRes = new ApiResponse<>(200, "project fetched", projectResponse);
@@ -45,7 +45,7 @@ public class ProjectController {
     }
 
     @GetMapping("/workspaces/{workspaceId}")
-    public ResponseEntity<ApiResponse<List<ProjectResponse>>> getWorkspaceProject(@PathVariable("workspaceId") Long workspaceId){
+    public ResponseEntity<ApiResponse<List<ProjectResponse>>> getWorkspaceProjects(@PathVariable("workspaceId") Long workspaceId){
         List<ProjectResponse> projectResponse = projectService.getWorkspaceProjects(workspaceId);
 
         ApiResponse<List<ProjectResponse>> apiRes = new ApiResponse<>(200, "All projects fetched", projectResponse);
@@ -60,11 +60,19 @@ public class ProjectController {
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 
-    @PostMapping("/{projectId}/members")
+    @PostMapping("/{projectId}/invite")
     public ResponseEntity<ApiResponse<List<ProjectMemberResponse>>> inviteUserToProject(@PathVariable("projectId") Long projectId, @Valid @RequestBody InviteUserInProjectRequest inviteUserInProjectResponse ){
         List<ProjectMemberResponse> projectResponse = projectService.inviteUserToProject(projectId, inviteUserInProjectResponse.getEmails());
 
         ApiResponse<List<ProjectMemberResponse>> apiRes = new ApiResponse<>(200, "Project members invited successfully", projectResponse);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
+
+    @DeleteMapping("/{projectId}/member/{userId}")
+    public ResponseEntity<ApiResponse<Void>> removeMemberFromProject(@PathVariable("projectId") Long projectId, @PathVariable("userId") Long userId){
+        projectService.removeMemberFromProject(projectId, userId);
+
+        ApiResponse<Void> apiRes = new ApiResponse<>(200, "User removed from project successfully", null);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 

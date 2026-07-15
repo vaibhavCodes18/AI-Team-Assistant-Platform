@@ -117,11 +117,25 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectResponse getProjectById(Long projectId) {
         User currentUser = getAuthenticateUser();
+        boolean isAuthorized = false;
 
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        if(!workspaceMemberRepository.existsByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())){
-            throw new BadCredentialsException("You are not a member of this workspace");
+        WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceAndUser(project.getWorkspace(), currentUser)
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+
+        
+        if(workspaceMember.getRole() == WorkspaceRole.OWNER || 
+        workspaceMember.getRole() == WorkspaceRole.ADMIN){
+            isAuthorized = true;
+        }else{
+            if(projectMemberRepository.existsByProjectIdAndUserId(projectId, currentUser.getId())){
+                isAuthorized = true;
+            }
+        }
+
+        if(!isAuthorized){
+            throw new BadCredentialsException("You are not authorized to remove member from this project");
         }
 
         return getProjectResponse(project);
@@ -130,15 +144,18 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public List<ProjectResponse> getWorkspaceProjects(Long workspaceId) {
         User currentUser = getAuthenticateUser();
-        Workspace workspace = workspaceRepository.findById(workspaceId).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
 
-        if(!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())){
-            throw new BadCredentialsException("You are not a member of this workspace");
+        WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, currentUser.getId()).orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+
+        List<Project> projects;
+        if(workspaceMember.getRole() == WorkspaceRole.OWNER || 
+        workspaceMember.getRole() == WorkspaceRole.ADMIN){
+            projects = projectRepository.findByWorkspaceIdOrderByUpdatedAtDesc(workspaceId);
+        }else{
+            projects = projectMemberRepository.findByUserIdAndProjectWorkspaceId(currentUser.getId(), workspaceId).stream().map(ProjectMember::getProject).collect(Collectors.toList());
         }
 
-        List<Project> allProjects = projectRepository.findByWorkspaceIdOrderByUpdatedAtDesc(workspace.getId());
-
-        return allProjects.stream().map(this::getProjectResponse).collect(Collectors.toList());
+        return projects.stream().map(this::getProjectResponse).collect(Collectors.toList());
     }
 
     @Override
@@ -147,12 +164,22 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
+        boolean isAuthorized = false;
+
         WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceAndUser(project.getWorkspace(), currentUser)
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+        
+        if(workspaceMember.getRole() == WorkspaceRole.OWNER ||
+        workspaceMember.getRole() == WorkspaceRole.ADMIN){
+            isAuthorized = true;
+        }else{
+            if(projectMemberRepository.existsByProjectIdAndUserId(projectId, currentUser.getId())){
+                isAuthorized = true;
+            }
+        }
 
-        // only workspace owner, admin or project member 
-        if(workspaceMember.getRole() != WorkspaceRole.OWNER && workspaceMember.getRole() != WorkspaceRole.ADMIN && !projectMemberRepository.existsByProjectIdAndUserId(projectId, currentUser.getId())){
-            throw new BadCredentialsException("You are not authorized to view this project");
+        if(!isAuthorized){
+            throw new BadCredentialsException("You are not authorized to get members of this project");
         }
 
         List<ProjectMember> projectMembers = projectMemberRepository.findByProjectId(projectId);
@@ -161,6 +188,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional
     public List<ProjectMemberResponse> inviteUserToProject(Long projectId, List<String> emails){
         User currentUser = getAuthenticateUser();
 
@@ -227,6 +255,64 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    public void removeMemberFromProject(Long projectId, Long userId){
+        User currentUser = getAuthenticateUser();
+
+        boolean isAuthorized = false;
+
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+        WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceAndUser(project.getWorkspace(), currentUser)
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+
+        User memberToRemove = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        
+        if(workspaceMember.getRole() == WorkspaceRole.OWNER || 
+        workspaceMember.getRole() == WorkspaceRole.ADMIN){
+            isAuthorized = true;
+        }else{
+            ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new BadCredentialsException("Project member not found"));
+            if(projectMember.getRole() == ProjectRole.PROJECT_ADMIN){
+                isAuthorized = true;
+            }
+        }
+
+        if(!isAuthorized){
+            throw new BadCredentialsException("You are not authorized to remove member from this project");
+        }
+
+        if(userId == currentUser.getId()){
+            throw new BadCredentialsException("You cannot remove yourself from the project");
+        }
+
+        if(!projectMemberRepository.existsByProjectIdAndUserId(projectId, userId)){
+            throw new BadCredentialsException("User is not a member of this project");
+        }
+        
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(workspaceMember.getWorkspace());
+        activityLog.setUser(currentUser);
+        activityLog.setAction("MEMBER_REMOVED");
+        activityLog.setEntityType("PROJECT_MEMBER");
+        activityLog.setEntityId(memberToRemove.getId());
+        activityLog.setMetadata(memberToRemove.getName() + " removed by " + currentUser.getName());
+        activityLogRepository.save(activityLog);
+
+        Notification notification = new Notification();
+
+        notification.setRecipient(memberToRemove);
+        notification.setTitle("Member removed from project");
+        notification.setMessage("You have been removed from project " + project.getName()
+                + " by " + currentUser.getName());
+        notification.setType(NotificationType.MEMBER_REMOVED);
+        notification.setIsRead(false);
+        notificationRepository.save(notification);
+
+        projectMemberRepository.deleteByProjectIdAndUserId(projectId, userId);
+    }
+
+    @Override
+    @Transactional
     public ProjectResponse updateProject(Long projectId, UpdateProjectRequest updateProjectRequest) {
         User currentUser = getAuthenticateUser();
 
@@ -287,7 +373,6 @@ public class ProjectServiceImpl implements ProjectService {
 
         projectRepository.delete(project);
     }
-
 
     private Project setProject(ProjectRequest projectRequest, Workspace workspace, User currentUser) {
         Project project = new Project();
