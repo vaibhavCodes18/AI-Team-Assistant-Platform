@@ -6,7 +6,7 @@ import { getWorkspaceById, getAllWorkspaceMembers } from '../../api/workspaceApi
 import { getWorkspaceProjects } from '../../api/projectApi';
 import Sidebar from '../../components/layout/Sidebar';
 import InviteMemberModal from '../../components/workspace/InviteMemberModal';
-import CreateProjectModal from '../../components/workspace/CreateProjectModal';
+import CreateProjectModal from '../../components/project/CreateProjectModal';
 import ViewLogsModal from '../../components/workspace/ViewLogsModal';
 import WorkspaceHeader from '../../components/workspace/WorkspaceHeader';
 import StatsBentoGrid from '../../components/workspace/StatsBentoGrid';
@@ -189,7 +189,6 @@ const WorkspaceDetails = () => {
           <RecentProjects
             workspaceId={id}
             projects={projects}
-            workspaceMembers={workspaceMembers}
             onNewProjectClick={handleOpenCreateProjectModal}
             isOwnerOrAdmin={isOwnerOrAdmin}
           />

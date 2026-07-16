@@ -8,7 +8,8 @@ import Profile from "../pages/profile/Profile.jsx";
 import WorkspaceList from "../pages/workspace/WorkspaceList.jsx";
 import WorkspaceDetails from "../pages/workspace/WorkspaceDetails.jsx";
 import WorkspaceMembers from "../pages/workspace/WorkspaceMembers.jsx";
-import WorkspaceProjects from "../pages/workspace/WorkspaceProjects.jsx";
+import ProjectList from "../pages/project/ProjectList.jsx";
+import ProjectDetails from "../pages/project/ProjectDetails.jsx";
 
 const AppRoutes = () => {
   return (
@@ -54,7 +55,15 @@ const AppRoutes = () => {
           path="/workspaces/:id/projects" 
           element={
             <ProtectedRoute>
-              <WorkspaceProjects />
+              <ProjectList />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/workspaces/:id/projects/:projectId" 
+          element={
+            <ProtectedRoute>
+              <ProjectDetails />
             </ProtectedRoute>
           } 
         />

@@ -1,7 +1,7 @@
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
-const RecentProjects = ({ workspaceId, projects, workspaceMembers, onNewProjectClick, isOwnerOrAdmin }) => {
+const RecentProjects = ({ workspaceId, projects, onNewProjectClick, isOwnerOrAdmin }) => {
   const navigate = useNavigate();
   // Use splice to extract the top 4 projects (after copying to avoid mutating state directly)
   const displayProjects = [...projects].splice(0, 4);
@@ -94,7 +94,7 @@ const RecentProjects = ({ workspaceId, projects, workspaceMembers, onNewProjectC
   };
 
   const handleProjectClick = (project) => {
-    toast.success(`Selected project: ${project.name}`);
+    navigate(`/workspaces/${workspaceId}/projects/${project.id}`);
   };
 
   return (
@@ -141,31 +141,6 @@ const RecentProjects = ({ workspaceId, projects, workspaceMembers, onNewProjectC
               )}
 
               <div className="flex items-center justify-between mb-md">
-                <div className="flex -space-x-2">
-                  {workspaceMembers && workspaceMembers.length > 0 ? (
-                    workspaceMembers.slice(0, 3).map((member, idx) => (
-                      <div
-                        key={idx}
-                        className="w-6 h-6 rounded-full border border-surface bg-surface-container-highest overflow-hidden flex items-center justify-center font-bold text-[9px] text-on-primary-container"
-                        title={member.user.name}
-                      >
-                        {member.user.profileImage ? (
-                          <img
-                            alt={member.user.name}
-                            className="w-full h-full object-cover"
-                            src={member.user.profileImage}
-                          />
-                        ) : (
-                          getInitials(member.user.name)
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="w-6 h-6 rounded-full border border-surface bg-surface-container-highest flex items-center justify-center font-bold text-[9px]">
-                      U
-                    </div>
-                  )}
-                </div>
                 <span className="text-xs text-on-surface-variant">
                   {formatTimeAgo(project.updatedAt || project.createdAt)}
                 </span>
