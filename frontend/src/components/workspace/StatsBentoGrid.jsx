@@ -1,4 +1,4 @@
-const StatsBentoGrid = ({ memberCount }) => {
+const StatsBentoGrid = ({ memberCount, projectCount }) => {
   return (
     <>
       {/* Main Stat 1: Members */}
@@ -26,7 +26,7 @@ const StatsBentoGrid = ({ memberCount }) => {
         </div>
         <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-xs">Active Projects</h3>
         <div className="flex items-baseline gap-sm">
-          <span className="font-display text-[32px] font-black text-on-surface">36</span>
+          <span className="font-display text-[32px] font-black text-on-surface">{projectCount}</span>
           <span className="text-on-surface-variant opacity-60">Repositories</span>
         </div>
       </div>

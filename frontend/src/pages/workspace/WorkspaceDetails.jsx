@@ -174,7 +174,7 @@ const WorkspaceDetails = () => {
 
           {/* Stats & Visual Bento Grid */}
           <section className="grid grid-cols-12 gap-lg text-left">
-            <StatsBentoGrid memberCount={workspaceMembers?.length || 0} />
+            <StatsBentoGrid memberCount={workspace?.memberCount || 0} projectCount={workspace?.projectCount || 0}/>
             <SystemActivity 
               workspaceId={id} 
               workspaceMembers={workspaceMembers} 

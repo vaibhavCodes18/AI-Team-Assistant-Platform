@@ -7,6 +7,7 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceMembe
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.*;
 import com.ai_powered_app.ai_team_assistant_platform.enums.NotificationType;
+import com.ai_powered_app.ai_team_assistant_platform.enums.ProjectStatus;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
@@ -22,8 +23,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -110,6 +109,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     @Override
     public List<WorkspaceResponse> getMyWorkspaces() {
         User loggedInUser = getAuthenticateUser();
+        
         List<WorkspaceMember> workspaceMembers = workspaceMemberRepository.findByUser(loggedInUser);
         List<Workspace> workspaces = new ArrayList<>();
         for (WorkspaceMember workspaceMember : workspaceMembers) {
@@ -409,8 +409,6 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     }
 
     private WorkspaceResponse getWorkspaceResponse(Workspace savedWorkspace) {
-        List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(savedWorkspace.getId());
-        Set<User> users = members.stream().map(WorkspaceMember::getUser).collect(Collectors.toSet());
         WorkspaceResponse response = new WorkspaceResponse();
         response.setId(savedWorkspace.getId());
         response.setName(savedWorkspace.getName());
@@ -422,7 +420,9 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         response.setCreatedAt(savedWorkspace.getCreatedAt());
         response.setUpdatedAt(savedWorkspace.getUpdatedAt());
 
-        response.setWorkspaceMembers(users.stream().map(this::getUserResponse).collect(Collectors.toSet()));
+        response.setMemberCount(workspaceMemberRepository.countByWorkspaceId(savedWorkspace.getId()));
+        response.setProjectCount(
+                projectRepository.countByWorkspaceIdAndStatusNot(savedWorkspace.getId(), ProjectStatus.ARCHIVED));
         return response;
     }
 

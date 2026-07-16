@@ -194,27 +194,7 @@ const WorkspaceList = () => {
                       </div>
                     )}
 
-                    {/* Member Avatars */}
-                    {workspace.workspaceMembers && workspace.workspaceMembers.length > 0 && (
-                      <div className="flex -space-x-2">
-                        {workspace.workspaceMembers.slice(0, 2).map((member, index) => (
-                          <div key={index} className="w-8 h-8 rounded-full border-2 border-surface-container-low bg-surface-container-high overflow-hidden" title={member.name}>
-                            {member.profileImage ? (
-                              <img className="w-full h-full object-cover" alt={getInitials(member.name)} src={member.profileImage} />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-[10px] font-bold text-on-surface">
-                                {getInitials(member.name)}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                        {workspace.workspaceMembers.length > 2 && (
-                          <div className="w-8 h-8 rounded-full border-2 border-surface-container-low bg-surface-container-high flex items-center justify-center bg-zinc-800 text-[10px] font-bold text-on-surface" title={`${workspace.workspaceMembers.length - 3} more members`}>
-                            +{workspace.workspaceMembers.length - 2}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    
                   </div>
 
                   <div className="mb-8">
@@ -229,11 +209,11 @@ const WorkspaceList = () => {
                   <div className="grid grid-cols-2 gap-4 mt-auto">
                     <div className="p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/30">
                       <p className="font-label-sm text-[10px] text-on-surface-variant uppercase mb-1">Members</p>
-                      <p className="font-headline-md text-[20px] text-on-surface">{workspace.workspaceMembers?.length || 0}</p>
+                      <p className="font-headline-md text-[20px] text-on-surface">{workspace.memberCount}</p>
                     </div>
                     <div className="p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/30">
                       <p className="font-label-sm text-[10px] text-on-surface-variant uppercase mb-1">Projects</p>
-                      <p className="font-headline-md text-[20px] text-on-surface">0</p>
+                      <p className="font-headline-md text-[20px] text-on-surface">{workspace.projectCount}</p>
                     </div>
                   </div>
                 </div>

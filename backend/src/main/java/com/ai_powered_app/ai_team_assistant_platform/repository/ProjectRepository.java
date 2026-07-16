@@ -20,6 +20,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     List<Project> findByCreatedById(Long userId);
 
+    Integer countByWorkspaceIdAndStatusNot(Long workspaceId, ProjectStatus status);
+
     List<Project> findByStatus(ProjectStatus status);
     @Query("""
                 SELECT pm.project
