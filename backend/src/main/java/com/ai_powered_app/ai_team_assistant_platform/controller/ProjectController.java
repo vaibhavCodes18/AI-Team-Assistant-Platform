@@ -2,6 +2,7 @@ package com.ai_powered_app.ai_team_assistant_platform.controller;
 
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.InviteUserInProjectRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.ProjectRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateProjectMemberRole;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateProjectRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectMemberResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectResponse;
@@ -73,6 +74,14 @@ public class ProjectController {
         projectService.removeMemberFromProject(projectId, userId);
 
         ApiResponse<Void> apiRes = new ApiResponse<>(200, "User removed from project successfully", null);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
+
+    @PatchMapping("/{projectId}/member/{userId}/role")
+    public ResponseEntity<ApiResponse<ProjectMemberResponse>> updateProjectMemberRole(@PathVariable("projectId") Long projectId, @PathVariable("userId") Long userId, @Valid @RequestBody UpdateProjectMemberRole updateProjectMemberRole){
+        ProjectMemberResponse projectResponse = projectService.changeProjectMemberRole(projectId, userId, updateProjectMemberRole);
+
+        ApiResponse<ProjectMemberResponse> apiRes = new ApiResponse<>(200, "Member role updated successfully", projectResponse);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 

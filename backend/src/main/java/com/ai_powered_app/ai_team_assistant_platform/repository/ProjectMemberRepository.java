@@ -4,11 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-
-import com.ai_powered_app.ai_team_assistant_platform.entity.Project;
 import com.ai_powered_app.ai_team_assistant_platform.entity.ProjectMember;
-import com.ai_powered_app.ai_team_assistant_platform.enums.ProjectStatus;
 
 public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Long> {
 
