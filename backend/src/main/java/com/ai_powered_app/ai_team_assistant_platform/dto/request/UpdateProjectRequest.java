@@ -25,7 +25,9 @@ public class UpdateProjectRequest {
     @Nullable
     private ProjectStatus status;
 
+    @Nullable
     private LocalDate startDate;
 
+    @Nullable
     private LocalDate deadline;
 }

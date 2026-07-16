@@ -119,7 +119,7 @@ public class ProjectServiceImpl implements ProjectService {
         User currentUser = getAuthenticateUser();
         boolean isAuthorized = false;
 
-        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+        Project project = projectRepository.findByIdAndStatusNot(projectId, ProjectStatus.ARCHIVED).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
         WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceAndUser(project.getWorkspace(), currentUser)
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
@@ -150,9 +150,9 @@ public class ProjectServiceImpl implements ProjectService {
         List<Project> projects;
         if(workspaceMember.getRole() == WorkspaceRole.OWNER || 
         workspaceMember.getRole() == WorkspaceRole.ADMIN){
-            projects = projectRepository.findByWorkspaceIdOrderByUpdatedAtDesc(workspaceId);
+            projects = projectRepository.findByWorkspaceIdAndStatusNotOrderByUpdatedAtDesc(workspaceId, ProjectStatus.ARCHIVED);
         }else{
-            projects = projectMemberRepository.findByUserIdAndProjectWorkspaceId(currentUser.getId(), workspaceId).stream().map(ProjectMember::getProject).collect(Collectors.toList());
+            projects = projectRepository.findAccessibleProjects(currentUser.getId(), workspaceId, ProjectStatus.ARCHIVED);
         }
 
         return projects.stream().map(this::getProjectResponse).collect(Collectors.toList());
@@ -315,24 +315,42 @@ public class ProjectServiceImpl implements ProjectService {
     @Transactional
     public ProjectResponse updateProject(Long projectId, UpdateProjectRequest updateProjectRequest) {
         User currentUser = getAuthenticateUser();
+        boolean isAuthorized = false;
 
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+        List<ProjectMember> projectMembers = projectMemberRepository.findByProjectId(projectId);
 
         WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
-        if(member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN){
-            throw new BadCredentialsException("Only OWNER or ADMIN can update project");
+        if(member.getRole() == WorkspaceRole.OWNER || member.getRole() == WorkspaceRole.ADMIN){
+            isAuthorized = true;
+        }else{
+            ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new BadCredentialsException("Project member not found"));
+            if(projectMember.getRole() == ProjectRole.PROJECT_ADMIN){
+                isAuthorized = true;
+            }
         }
 
-        if(updateProjectRequest.getName() != null){
+        if(!isAuthorized){
+            throw new BadCredentialsException("You are not authorized to update project");
+        }
+
+        if(updateProjectRequest.getName() != null && !updateProjectRequest.getName().isEmpty()){
             project.setName(updateProjectRequest.getName());
         }
-        if(updateProjectRequest.getDescription() != null){
+        if(updateProjectRequest.getDescription() != null && !updateProjectRequest.getDescription().isEmpty()){
             project.setDescription(updateProjectRequest.getDescription());
         }
-        if(updateProjectRequest.getStatus() != null){
+        if(updateProjectRequest.getStatus() != null && !updateProjectRequest.getStatus().name().isEmpty()){
             project.setStatus(updateProjectRequest.getStatus());
+        }
+        if(updateProjectRequest.getStartDate() != null && !updateProjectRequest.getStartDate().toString().isEmpty()){
+            project.setStartDate(updateProjectRequest.getStartDate());
+        }
+        if(updateProjectRequest.getDeadline() != null && !updateProjectRequest.getDeadline().toString().isEmpty()){
+            project.setDeadline(updateProjectRequest.getDeadline());
         }
         Project updatedProject = projectRepository.save(project);
 
@@ -345,6 +363,30 @@ public class ProjectServiceImpl implements ProjectService {
         activityLog.setMetadata(currentUser.getName() + " updated project " + updatedProject.getName());
         activityLogRepository.save(activityLog);
 
+        for(ProjectMember projectMember : projectMembers){
+            Notification notification = new Notification();
+            notification.setRecipient(projectMember.getUser());
+            notification.setTitle("Project updated");
+            notification.setMessage("Project " + updatedProject.getName() + " has been updated by " + currentUser.getName());
+            notification.setType(NotificationType.PROJECT_UPDATED);
+            notification.setIsRead(false);
+            notificationRepository.save(notification);
+        }
+
+        List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(updatedProject.getWorkspace().getId());
+        for(WorkspaceMember workspaceMember : members){
+            if(workspaceMember.getRole() != WorkspaceRole.OWNER && workspaceMember.getRole() != WorkspaceRole.ADMIN){
+                continue;
+            }
+            Notification notification = new Notification();
+            notification.setRecipient(workspaceMember.getUser());
+            notification.setTitle("Project updated");
+            notification.setMessage("Project " + updatedProject.getName() + " has been updated by " + currentUser.getName());
+            notification.setType(NotificationType.PROJECT_UPDATED);
+            notification.setIsRead(false);
+            notificationRepository.save(notification);
+        }
+
         return getProjectResponse(updatedProject);
     }
 
@@ -352,14 +394,24 @@ public class ProjectServiceImpl implements ProjectService {
     @Transactional
     public void deleteProject(Long projectId) {
         User currentUser = getAuthenticateUser();
+        boolean isAuthorized = false;
 
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-
+        List<ProjectMember> projectMembers = projectMemberRepository.findByProjectId(projectId);
         WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
-        if(member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN){
-            throw new BadCredentialsException("Only OWNER or ADMIN can delete project");
+        if(member.getRole() == WorkspaceRole.OWNER || member.getRole() == WorkspaceRole.ADMIN){
+            isAuthorized = true;
+        }else{
+            ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, currentUser.getId()).orElseThrow(() -> new BadCredentialsException("Project member not found"));
+            if(projectMember.getRole() == ProjectRole.PROJECT_ADMIN){
+                isAuthorized = true;
+            }
+        }
+
+        if(!isAuthorized){
+            throw new BadCredentialsException("You are not authorized to delete project");
         }
 
         ActivityLog activityLog = new ActivityLog();
@@ -371,7 +423,32 @@ public class ProjectServiceImpl implements ProjectService {
         activityLog.setMetadata(currentUser.getName() + " deleted project " + project.getName());
         activityLogRepository.save(activityLog);
 
-        projectRepository.delete(project);
+        for(ProjectMember projectMember : projectMembers){
+            Notification notification = new Notification();
+            notification.setRecipient(projectMember.getUser());
+            notification.setTitle("Project deleted");
+            notification.setMessage("Project " + project.getName() + " has been deleted by " + currentUser.getName());
+            notification.setType(NotificationType.PROJECT_UPDATED);
+            notification.setIsRead(false);
+            notificationRepository.save(notification);
+        }
+
+        List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(project.getWorkspace().getId());
+        for(WorkspaceMember workspaceMember : members){
+            if(workspaceMember.getRole() != WorkspaceRole.OWNER && workspaceMember.getRole() != WorkspaceRole.ADMIN){
+                continue;
+            }
+            Notification notification = new Notification();
+            notification.setRecipient(workspaceMember.getUser());
+            notification.setTitle("Project deleted");
+            notification.setMessage("Project " + project.getName() + " has been deleted by " + currentUser.getName());
+            notification.setType(NotificationType.PROJECT_DELETED);
+            notification.setIsRead(false);
+            notificationRepository.save(notification);
+        }
+
+        project.setStatus(ProjectStatus.ARCHIVED);
+        projectRepository.save(project);
     }
 
     private Project setProject(ProjectRequest projectRequest, Workspace workspace, User currentUser) {

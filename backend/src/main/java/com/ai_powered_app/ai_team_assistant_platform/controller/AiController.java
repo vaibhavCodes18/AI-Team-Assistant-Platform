@@ -1,20 +1,14 @@
 package com.ai_powered_app.ai_team_assistant_platform.controller;
 
-import com.ai_powered_app.ai_team_assistant_platform.dto.request.GenerateDocsRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.GenerateDocsResponse;
 import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.AiDocumentationService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
