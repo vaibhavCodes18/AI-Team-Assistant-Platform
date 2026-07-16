@@ -101,7 +101,7 @@ public class ProjectServiceImpl implements ProjectService {
         List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspace.getId());
         List<Notification> notifications = new ArrayList<>();
         for (WorkspaceMember workspaceMember : members) {
-            if (!workspaceMember.getUser().getId().equals(currentUser.getId())) {
+            if (workspaceMember.getRole().equals(WorkspaceRole.OWNER) || workspaceMember.getRole().equals(WorkspaceRole.ADMIN)) {
                 Notification notification = new Notification();
                 notification.setRecipient(workspaceMember.getUser());
                 notification.setTitle("New Project Created");
@@ -364,6 +364,23 @@ public class ProjectServiceImpl implements ProjectService {
                 projectMember.setRole(updateProjectMemberRole.getProjectRole());
             }
         }
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setWorkspace(workspaceMember.getWorkspace());
+        activityLog.setUser(currentUser);
+        activityLog.setAction("MEMBER_ROLE_UPDATED");
+        activityLog.setEntityType("PROJECT_MEMBER");
+        activityLog.setEntityId(memberToChange.getId());
+        activityLog.setMetadata(memberToChange.getName() + " role updated by " + currentUser.getName());
+        activityLogRepository.save(activityLog);
+
+        Notification notification = new Notification();
+        notification.setRecipient(memberToChange);
+        notification.setTitle("Member role updated");
+        notification.setMessage("Your role in project " + project.getName() + " has been updated by " + currentUser.getName());
+        notification.setType(NotificationType.MEMBER_UPDATED);
+        notification.setIsRead(false);
+        notificationRepository.save(notification);
 
         ProjectMember updatedMember = projectMemberRepository.save(projectMember);
         return getProjectMemberResponse(updatedMember);
