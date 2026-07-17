@@ -7,6 +7,8 @@ import { getAllWorkspaceMembers } from '../../api/workspaceApi';
 import Sidebar from '../../components/layout/Sidebar';
 import InviteProjectMemberModal from '../../components/project/InviteProjectMemberModal';
 import ManageProjectMemberModal from '../../components/project/ManageProjectMemberModal';
+import EditProjectModal from '../../components/project/EditProjectModal';
+import DeleteProjectModal from '../../components/project/DeleteProjectModal';
 
 const MOCK_TICKETS = [
   {
@@ -47,6 +49,8 @@ const ProjectDetails = () => {
   const [loading, setLoading] = useState(true);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
 
   const loadData = async () => {
@@ -192,6 +196,14 @@ const ProjectDetails = () => {
 
   const progressInfo = getProjectProgressInfo();
 
+  const currentUserWorkspaceMember = workspaceMembers.find(m => m.user?.id === user?.id);
+  const currentUserProjectMember = members.find(m => m.user?.id === user?.id);
+  const canUpdateProject = 
+    currentUserWorkspaceMember?.role === 'OWNER' || 
+    currentUserWorkspaceMember?.role === 'ADMIN' || 
+    currentUserProjectMember?.role === 'PROJECT_ADMIN';
+
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center text-on-background">
@@ -227,8 +239,26 @@ const ProjectDetails = () => {
             <Link to={`/workspaces/${id}/projects`} className="flex items-center gap-1 text-on-surface-variant hover:text-on-surface transition-colors" title="Back to Projects">
               <span className="material-symbols-outlined text-[20px] font-bold">arrow_back</span>
             </Link>
-            <h1 className="font-headline-md text-on-surface font-bold text-lg md:text-xl">
-              {project?.name || 'Enterprise CRM Integration'}
+            <h1 className="font-headline-md text-on-surface font-bold text-lg md:text-xl flex items-center gap-2">
+              <span>{project?.name || 'Enterprise CRM Integration'}</span>
+              {canUpdateProject && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="p-1 hover:bg-surface-container-high rounded text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center cursor-pointer bg-transparent border-none outline-none"
+                    title="Edit Project"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                  </button>
+                  <button
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className="p-1 hover:bg-error-container/20 rounded text-error hover:text-error-container transition-colors flex items-center justify-center cursor-pointer bg-transparent border-none outline-none"
+                    title="Delete Project"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                  </button>
+                </div>
+              )}
             </h1>
             <div className="hidden md:flex gap-4">
               <a className="text-on-surface-variant hover:text-on-surface transition-colors" href="#">Docs</a>
@@ -271,7 +301,27 @@ const ProjectDetails = () => {
               <div>
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-on-surface-variant font-medium mb-1">Project Milestone</h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-on-surface-variant font-medium">Project Milestone</h3>
+                      {canUpdateProject && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setIsEditModalOpen(true)}
+                            className="p-1 hover:bg-surface-container-high rounded text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center cursor-pointer bg-transparent border-none outline-none"
+                            title="Edit Project"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                          </button>
+                          <button
+                            onClick={() => setIsDeleteModalOpen(true)}
+                            className="p-1 hover:bg-error-container/20 rounded text-error hover:text-error-container transition-colors flex items-center justify-center cursor-pointer bg-transparent border-none outline-none"
+                            title="Delete Project"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <p className="font-headline-md text-on-surface text-lg md:text-xl font-bold">
                       {project?.description ? project.description : 'System Architecture Validation'}
                     </p>
@@ -597,6 +647,27 @@ const ProjectDetails = () => {
         currentUserRoleInWorkspace={workspaceMembers.find(m => m.user?.id === user?.id)?.role}
         currentUserRoleInProject={members.find(m => m.user?.id === user?.id)?.role}
         onSuccess={loadData}
+      />
+
+      {/* Edit Project Modal */}
+      <EditProjectModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        project={project}
+        onSuccess={loadData}
+        onDeleteClick={() => {
+          setIsEditModalOpen(false);
+          setIsDeleteModalOpen(true);
+        }}
+      />
+
+      {/* Delete Project Modal */}
+      <DeleteProjectModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        projectId={projectId}
+        projectName={project?.name}
+        workspaceId={id}
       />
     </div>
   );

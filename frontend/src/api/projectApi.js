@@ -10,6 +10,15 @@ export const createProject = async(projectData) => {
     return response.data;
 }
 
+export const updateProject = async (projectId, updatedData) => {
+    const response = await api.put(`/v1/projects/${projectId}`, updatedData);
+    return response.data;
+}
+export const deleteProject = async (projectId) => {
+    const response = await api.delete(`/v1/projects/${projectId}`);
+    return response.data;
+}
+
 export const getProjectMembers = async (projectId) => {
     const response = await api.get(`/v1/projects/${projectId}/members`);
     return response.data;
