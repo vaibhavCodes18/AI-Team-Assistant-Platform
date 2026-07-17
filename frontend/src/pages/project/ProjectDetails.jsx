@@ -3,42 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { fetchUserProfile } from '../../api/authApi';
 import { getProjectById, getProjectMembers, getProjectTasks } from '../../api/projectApi';
+import { getAllWorkspaceMembers } from '../../api/workspaceApi';
 import Sidebar from '../../components/layout/Sidebar';
 import InviteProjectMemberModal from '../../components/project/InviteProjectMemberModal';
-
-// Mock data to preserve visual completeness of the HTML template when backend list is empty
-const MOCK_MEMBERS = [
-  {
-    id: 'mock-1',
-    user: {
-      name: 'Sarah Jenkins',
-      profileImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAhWHQc-2gZaeMgkWMlRZvHMxzuPigf9GGZE3rYnL2SZCJ6Jjb3TUYRzGLpnMvfBlneCmXhXguSLSsoZQQuShg0mcOQ8h5gtrYixykjCW3LfdR3ULtOuDolzMm-egQL1T3E9bmfDafqsooPojzYtPv-oSXmrzfs5LsUXMaa2v75YymTdA6JFq_eCcUXgKWnSP1u28UBh3aR2O6WOFn8743K8T-TWRRY3w-T60_pShadDFVLs3_KzjHKQs58oOKdfwkrR55V-KSDPuII',
-      designation: 'Lead Architect'
-    },
-    role: 'OWNER',
-    online: true
-  },
-  {
-    id: 'mock-2',
-    user: {
-      name: 'Marcus Thorne',
-      profileImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAv595E4LULmXn-nURc2CD65mi6rQxcaz5dG_p4EBvZ39p7phhJf0HE5VEyBPth-GhPTXGD7XQ91JO3dUQKioUbfAa2SmCguWDQZHsv0J-2kXBMgrE3n9TIBJgAc98lpJD0XC9btqr5JYBTOVljbUemvo81rORHAHfqVQ7cBLjggHhm-FmjLMpslaoIxtEb96wwDd6Q3lm2WGrCVOq5v-RFmYEY0DejA7O5GqxZV6ebzOJeg3aHyzS7UvuKErs08MDLuHXXTkvLqj5H',
-      designation: 'Senior Dev'
-    },
-    role: 'ADMIN',
-    online: true
-  },
-  {
-    id: 'mock-3',
-    user: {
-      name: 'Alex Lee',
-      profileImage: null,
-      designation: 'Product Designer'
-    },
-    role: 'MEMBER',
-    online: false
-  }
-];
+import ManageProjectMemberModal from '../../components/project/ManageProjectMemberModal';
 
 const MOCK_TICKETS = [
   {
@@ -74,9 +42,12 @@ const ProjectDetails = () => {
   const [user, setUser] = useState(null);
   const [project, setProject] = useState(null);
   const [members, setMembers] = useState([]);
+  const [workspaceMembers, setWorkspaceMembers] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
 
   const loadData = async () => {
     try {
@@ -94,6 +65,16 @@ const ProjectDetails = () => {
         toast.error('Project not found');
         navigate(`/workspaces/${id}/projects`);
         return;
+      }
+
+      // 2.5 Fetch workspace members
+      try {
+        const wsMembersRes = await getAllWorkspaceMembers(id);
+        if (wsMembersRes?.data) {
+          setWorkspaceMembers(wsMembersRes.data);
+        }
+      } catch (err) {
+        console.error('Failed to load workspace members:', err);
       }
 
       // 3. Fetch project members
@@ -223,7 +204,7 @@ const ProjectDetails = () => {
   }
 
   // Determine lists to render
-  const renderedMembers = members.length > 0 ? members : MOCK_MEMBERS;
+  const renderedMembers = members;
   const renderedTasks = tasks.length > 0 ? tasks.map(t => ({
     id: t.id,
     title: t.title,
@@ -367,28 +348,60 @@ const ProjectDetails = () => {
                 </div>
                 <div className="space-y-4 max-h-[180px] overflow-y-auto custom-scrollbar pr-2">
                   {renderedMembers.map((member, index) => {
-                    if(index>=5){
-                      return null;
-                    }
+                    
                     const memberName = member.user?.name || 'Project Collaborator';
-                    const memberDesignation = member.user?.designation || (member.role === 'OWNER' ? 'Project Owner' : member.role === 'ADMIN' ? 'Admin' : 'Collaborator');
+                    const memberDesignation = member.user?.designation || 'Engineer';
                     const profileImg = member.user?.profileImage;
                     const isOnline = member.online !== undefined ? member.online : index < 2;
+                    const isSelf = member.user?.id === user?.id;
+
+                    const projectRole = member.role;
+                    
+                    const formatRoleLabel = (role) => {
+                      if (!role) return 'Member';
+                      if (role === 'PROJECT_ADMIN') return 'Project Admin';
+                      return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+                    };
 
                     return (
-                      <div key={member.id || index} className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full border border-outline-variant overflow-hidden flex items-center justify-center bg-secondary-container text-on-secondary-container font-semibold text-sm shrink-0">
-                          {profileImg ? (
-                            <img alt={memberName} className="w-full h-full object-cover" src={profileImg} />
-                          ) : (
-                            getInitials(memberName)
-                          )}
+                      <div key={member.id || index} className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="relative shrink-0">
+                            <div className="w-10 h-10 rounded-full border border-outline-variant overflow-hidden flex items-center justify-center bg-secondary-container text-on-secondary-container font-semibold text-sm">
+                              {profileImg ? (
+                                <img alt={memberName} className="w-full h-full object-cover" src={profileImg} />
+                              ) : (
+                                getInitials(memberName)
+                              )}
+                            </div>
+                            <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-surface ${isOnline ? 'bg-green-500' : 'bg-zinc-600'}`}></div>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-on-surface truncate flex items-center gap-xs">
+                              {memberName}
+                            </p>
+                            <p className="text-xs text-on-surface-variant truncate">
+                              {memberDesignation} • {formatRoleLabel(projectRole)}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-on-surface truncate">{memberName}</p>
-                          <p className="text-xs text-on-surface-variant truncate">{memberDesignation}</p>
-                        </div>
-                        <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-zinc-600'}`}></div>
+                        {isSelf ? (
+                          <span className="text-[10px] text-primary font-semibold px-2 py-0.5 bg-primary/10 rounded-full shrink-0">
+                            You
+                          </span>
+                        ) : (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedMember(member);
+                              setIsManageModalOpen(true);
+                            }}
+                            className="p-xs hover:bg-surface-container-high rounded-full text-on-surface-variant hover:text-on-surface transition-all flex items-center justify-center shrink-0 cursor-pointer bg-transparent border-none"
+                            title="Manage Member"
+                          >
+                            <span className="material-symbols-outlined text-on-surface-variant">more_vert</span>
+                          </button>
+                        )}
                       </div>
                     );
                   })}
@@ -569,6 +582,20 @@ const ProjectDetails = () => {
         onClose={() => setIsInviteModalOpen(false)}
         projectId={projectId}
         projectName={project?.name}
+        onSuccess={loadData}
+      />
+
+      {/* Project Manage Member Modal */}
+      <ManageProjectMemberModal
+        isOpen={isManageModalOpen}
+        onClose={() => {
+          setIsManageModalOpen(false);
+          setSelectedMember(null);
+        }}
+        member={selectedMember}
+        projectId={projectId}
+        currentUserRoleInWorkspace={workspaceMembers.find(m => m.user?.id === user?.id)?.role}
+        currentUserRoleInProject={members.find(m => m.user?.id === user?.id)?.role}
         onSuccess={loadData}
       />
     </div>

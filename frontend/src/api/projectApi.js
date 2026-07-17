@@ -29,3 +29,13 @@ export const getProjectTasks = async (projectId, params) => {
     const response = await api.get(`/v1/projects/${projectId}/tasks`, { params });
     return response.data;
 };
+
+export const removeProjectMember = async (projectId, userId) => {
+    const response = await api.delete(`/v1/projects/${projectId}/member/${userId}`);
+    return response.data;
+};
+
+export const updateProjectMemberRole = async (projectId, userId, roleData) => {
+    const response = await api.patch(`/v1/projects/${projectId}/member/${userId}/role`, roleData);
+    return response.data;
+};

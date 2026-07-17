@@ -334,6 +334,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional
     public ProjectMemberResponse changeProjectMemberRole(Long projectId, Long userId,
             UpdateProjectMemberRole updateProjectMemberRole) {
         User currentUser = getAuthenticateUser();
@@ -378,7 +379,7 @@ public class ProjectServiceImpl implements ProjectService {
         notification.setRecipient(memberToChange);
         notification.setTitle("Member role updated");
         notification.setMessage("Your role in project " + project.getName() + " has been updated by " + currentUser.getName());
-        notification.setType(NotificationType.MEMBER_UPDATED);
+        notification.setType(NotificationType.MEMBER_ROLE_UPDATED);
         notification.setIsRead(false);
         notificationRepository.save(notification);
 

@@ -19,7 +19,7 @@ public enum NotificationType {
     PROJECT_CREATED,
     PROJECT_UPDATED,
     PROJECT_DELETED,
-    MEMBER_UPDATED,
+    PROJECT_MEMBER_UPDATED,
 
     // ==========================
     // Task
