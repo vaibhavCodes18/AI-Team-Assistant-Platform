@@ -1,6 +1,7 @@
 package com.ai_powered_app.ai_team_assistant_platform.security;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,6 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
@@ -41,6 +43,15 @@ public class SecurityConfig {
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .oauth2Login(oauth2 -> oauth2
+                        .failureHandler(
+                                (request, response, exception) -> {
+                                    log.error("Oauth error occurred: {}", exception.getMessage());
+                                }
+                        )
+                        .successHandler(null)
+                )
+
                 .build();
     }
 
