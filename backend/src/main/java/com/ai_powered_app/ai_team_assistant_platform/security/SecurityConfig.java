@@ -1,5 +1,6 @@
 package com.ai_powered_app.ai_team_assistant_platform.security;
 
+import com.ai_powered_app.ai_team_assistant_platform.security.oauth2.Oauth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -28,6 +29,7 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final Oauth2SuccessHandler oauth2SuccessHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -49,7 +51,7 @@ public class SecurityConfig {
                                     log.error("Oauth error occurred: {}", exception.getMessage());
                                 }
                         )
-                        .successHandler(null)
+                        .successHandler(oauth2SuccessHandler)
                 )
 
                 .build();
