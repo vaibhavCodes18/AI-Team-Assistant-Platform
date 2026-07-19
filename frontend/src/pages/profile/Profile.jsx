@@ -81,8 +81,8 @@ const Profile = () => {
       toast.error('Designation must not exceed 100 characters');
       return;
     }
-    if (formData.profileImage.length > 255) {
-      toast.error('Profile Image URL must not exceed 255 characters');
+    if (formData.profileImage && formData.profileImage.length > 1000) {
+      toast.error('Profile Image URL must not exceed 1000 characters');
       return;
     }
 
@@ -169,11 +169,19 @@ const Profile = () => {
             >
               <span className="material-symbols-outlined">logout</span>
             </button>
-            <div className="w-8 h-8 rounded-full overflow-hidden border border-outline-variant ml-2 flex items-center justify-center bg-primary-container text-on-primary-container font-semibold text-xs">
-              {user?.profileImage ? (
-                <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
-              ) : (
-                getInitials(user?.name)
+            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-outline-variant ml-2 flex items-center justify-center bg-primary-container text-on-primary-container font-semibold text-xs">
+              <span className="absolute inset-0 flex items-center justify-center">
+                {getInitials(user?.name)}
+              </span>
+              {user?.profileImage && (
+                <img 
+                  src={user.profileImage} 
+                  alt={user.name} 
+                  className="absolute inset-0 w-full h-full object-cover z-10" 
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
               )}
             </div>
           </div>
@@ -193,19 +201,33 @@ const Profile = () => {
               
               {/* Profile Card Summary Panel (4 columns) */}
               <div className="lg:col-span-4 bg-surface-container border border-outline-variant p-lg rounded-xl flex flex-col items-center text-center gap-lg relative overflow-hidden group transition-all duration-300">
-                <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                  <span className="text-[10px] uppercase font-bold text-green-400">
-                    {user?.isActive ? 'Active' : 'Inactive'}
+                <div className={`absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1 rounded-full ${
+                  user?.isActive === false 
+                    ? 'bg-red-500/10 border border-red-500/20 text-red-400' 
+                    : 'bg-green-500/10 border border-green-500/20 text-green-400'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full animate-pulse ${
+                    user?.isActive === false ? 'bg-red-400' : 'bg-green-400'
+                  }`}></span>
+                  <span className="text-[10px] uppercase font-bold">
+                    {user?.isActive === false ? 'Inactive' : 'Active'}
                   </span>
                 </div>
 
                 <div className="relative mt-md">
-                  <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-primary/30 bg-surface-container-high flex items-center justify-center text-on-primary-container text-display font-display select-none">
-                    {user?.profileImage ? (
-                      <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
-                    ) : (
-                      getInitials(user?.name)
+                  <div className="relative w-28 h-28 rounded-full overflow-hidden border-2 border-primary/30 bg-surface-container-high flex items-center justify-center text-on-primary-container text-display font-display select-none">
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      {getInitials(user?.name)}
+                    </span>
+                    {user?.profileImage && (
+                      <img 
+                        src={user.profileImage} 
+                        alt={user.name} 
+                        className="absolute inset-0 w-full h-full object-cover z-10" 
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
                     )}
                   </div>
                 </div>

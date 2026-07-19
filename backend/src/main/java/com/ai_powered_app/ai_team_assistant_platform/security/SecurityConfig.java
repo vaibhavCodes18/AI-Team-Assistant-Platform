@@ -3,6 +3,7 @@ package com.ai_powered_app.ai_team_assistant_platform.security;
 import com.ai_powered_app.ai_team_assistant_platform.security.oauth2.Oauth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,7 +16,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -25,6 +25,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 @Slf4j
 public class SecurityConfig {
+
+    @Value("${app.oauth2.failure-redirect-uri:http://localhost:5173/login}")
+    private String failureRedirectUri;
 
     private final UserDetailsService userDetailsService;
 
@@ -49,17 +52,14 @@ public class SecurityConfig {
                         .failureHandler(
                                 (request, response, exception) -> {
                                     log.error("Oauth error occurred: {}", exception.getMessage());
+                                    String targetUrl = failureRedirectUri + "?error=" + java.net.URLEncoder.encode(exception.getMessage(), java.nio.charset.StandardCharsets.UTF_8);
+                                    response.sendRedirect(targetUrl);
                                 }
                         )
                         .successHandler(oauth2SuccessHandler)
                 )
 
                 .build();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder(12);
     }
 
     @Bean

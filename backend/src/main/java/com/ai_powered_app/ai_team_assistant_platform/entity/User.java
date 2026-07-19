@@ -24,7 +24,7 @@ public class User extends BaseEntity{
     private String password;
 
     @Enumerated(EnumType.STRING)
-    private PlatformRole platformRole = PlatformRole.Standard_Member;
+    private PlatformRole platformRole;
 
     @Enumerated(EnumType.STRING)
     private AuthProvider provider;

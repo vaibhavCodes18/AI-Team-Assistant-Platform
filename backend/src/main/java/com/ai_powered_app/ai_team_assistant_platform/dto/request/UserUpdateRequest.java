@@ -15,7 +15,7 @@ public class UserUpdateRequest {
     @Size(max = 100, message = "Name must not exceed 100 characters")
     private String name;
 
-    @Size(max = 255, message = "Profile image URL must not exceed 255 characters")
+    @Size(max = 1000, message = "Profile image URL must not exceed 1000 characters")
     private String profileImage;
 
     @Size(max = 100, message = "Designation must not exceed 100 characters")

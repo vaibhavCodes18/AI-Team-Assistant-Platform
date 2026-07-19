@@ -20,7 +20,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByPlatformRole(PlatformRole platformRole);
 
-    Optional<User> findByProviderAndProviderUserId(AuthProvider provider, String providerUserId);
+    Optional<User> findByProviderUserIdAndProvider(String providerUserId, AuthProvider provider);
 
     List<User> findByIsActive(Boolean isActive);
 }

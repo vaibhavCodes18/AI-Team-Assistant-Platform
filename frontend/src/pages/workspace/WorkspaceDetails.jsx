@@ -151,11 +151,19 @@ const WorkspaceDetails = () => {
             >
               <span className="material-symbols-outlined">logout</span>
             </button>
-            <div className="w-8 h-8 rounded-full overflow-hidden border border-outline-variant ml-2 flex items-center justify-center bg-primary-container text-on-primary-container font-semibold text-xs">
-              {user?.profileImage ? (
-                <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
-              ) : (
-                getInitials(user?.name)
+            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-outline-variant ml-2 flex items-center justify-center bg-primary-container text-on-primary-container font-semibold text-xs">
+              <span className="absolute inset-0 flex items-center justify-center">
+                {getInitials(user?.name)}
+              </span>
+              {user?.profileImage && (
+                <img 
+                  src={user.profileImage} 
+                  alt={user.name} 
+                  className="absolute inset-0 w-full h-full object-cover z-10" 
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
               )}
             </div>
           </div>
@@ -174,7 +182,7 @@ const WorkspaceDetails = () => {
 
           {/* Stats & Visual Bento Grid */}
           <section className="grid grid-cols-12 gap-lg text-left">
-            <StatsBentoGrid memberCount={workspace?.memberCount || 0} projectCount={workspace?.projectCount || 0}/>
+            <StatsBentoGrid memberCount={workspaceMembers.length} projectCount={projects.length} />
             <SystemActivity 
               workspaceId={id} 
               workspaceMembers={workspaceMembers} 

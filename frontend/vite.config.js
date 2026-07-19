@@ -10,6 +10,11 @@ export default defineConfig({
         target: 'http://localhost:1818',
         changeOrigin: true,
         secure: false,
+      },
+      '/oauth2/authorization': {
+        target: 'http://localhost:1818',
+        changeOrigin: true,
+        secure: false,
       }
     }
   }
