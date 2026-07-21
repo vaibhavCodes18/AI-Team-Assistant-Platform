@@ -102,7 +102,7 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}/tasks")
-    public ResponseEntity<ApiResponse<Page<TaskResponse>>> getProjectTasks(
+    public ResponseEntity<ApiResponse<Page<TaskResponse>>> getRecentProjectTasks(
             @PathVariable("projectId") Long projectId,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,

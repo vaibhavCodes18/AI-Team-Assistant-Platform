@@ -18,7 +18,6 @@ const OAuth2Success = () => {
     // Try to get token from query parameter first, then cookie, then localStorage (resilient to StrictMode mounts)
     const params = new URLSearchParams(window.location.search);
     let accessToken = params.get('access_token');
-    
     if (!accessToken) {
       accessToken = getCookie('access_token');
     }
