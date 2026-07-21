@@ -2,50 +2,52 @@ package com.ai_powered_app.ai_team_assistant_platform.entity;
 
 import com.ai_powered_app.ai_team_assistant_platform.enums.TicketPriority;
 import com.ai_powered_app.ai_team_assistant_platform.enums.TicketStatus;
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.ai_powered_app.ai_team_assistant_platform.enums.TicketType;
 
-import java.time.LocalDate;
+import jakarta.persistence.*;
+import lombok.*;
+
 
 @Entity
 @Table(name = "tickets")
-@NoArgsConstructor
-@AllArgsConstructor
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Ticket extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id")
-    private Project project;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
+    @Column(nullable = false)
     private String title;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
     @Enumerated(EnumType.STRING)
-    private TicketStatus status;
+    @Column(nullable = false)
+    private TicketType type;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private TicketPriority priority;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assignee_id")
-    private User assignee;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TicketStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by")
-    private User createdBy;
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
 
-    private LocalDate dueDate;
-
-    @Column(columnDefinition = "TEXT")
-    private String aiSummary;
-
-
+    /**
+     * Person who created the ticket
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reporter_id", nullable = false)
+    private User reporter;
 
 }

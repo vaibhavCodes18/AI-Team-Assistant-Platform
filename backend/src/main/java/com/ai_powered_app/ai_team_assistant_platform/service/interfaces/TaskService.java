@@ -8,7 +8,6 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateTaskStatu
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ActivityLogResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TaskDashboardResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TaskResponse;
-import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -20,7 +19,7 @@ public interface TaskService {
     TaskResponse assignTask(Long taskId, AssignTaskRequest request);
     TaskResponse updateStatus(Long taskId, UpdateTaskStatusRequest request);
     TaskResponse markComplete(Long taskId);
-    Page<TaskResponse> getProjectTasks(Long projectId, int page, int size, String sort);
+    List<TaskResponse> getProjectTasks(Long projectId);
     List<TaskResponse> getMyTasks();
     List<TaskResponse> getOverdueTasks();
     List<TaskResponse> searchTasks(TaskSearchRequest request);

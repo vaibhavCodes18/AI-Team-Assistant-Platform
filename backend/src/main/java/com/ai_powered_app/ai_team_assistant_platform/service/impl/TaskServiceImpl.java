@@ -346,7 +346,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public Page<TaskResponse> getProjectTasks(Long projectId, int page, int size, String sort) {
+    public List<TaskResponse> getProjectTasks(Long projectId) {
         User currentUser = getAuthenticatedUser();
 
         Project project = projectRepository.findById(projectId)

@@ -102,13 +102,10 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}/tasks")
-    public ResponseEntity<ApiResponse<Page<TaskResponse>>> getRecentProjectTasks(
-            @PathVariable("projectId") Long projectId,
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size,
-            @RequestParam(value = "sort", defaultValue = "id,asc") String sort) {
-        Page<TaskResponse> tasks = taskService.getProjectTasks(projectId, page, size, sort);
-        ApiResponse<Page<TaskResponse>> apiRes = new ApiResponse<>(200, "Project tasks fetched successfully", tasks);
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> getRecentProjectTasks(
+            @PathVariable("projectId") Long projectId) {
+        List<TaskResponse> tasks = taskService.getProjectTasks(projectId);
+        ApiResponse<List<TaskResponse>> apiRes = new ApiResponse<>(200, "Project tasks fetched successfully", tasks);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 

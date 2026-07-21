@@ -14,7 +14,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Task extends BaseEntity{
+public class Task extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,32 +34,36 @@ public class Task extends BaseEntity{
     @Column(nullable = false)
     private TaskPriority priority;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "workspace_id", nullable = false)
-    private Workspace workspace;
+    private LocalDate dueDate;
 
+    /**
+     * Task belongs to a project.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 
+    /**
+     * Person assigned to complete the task.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_to")
-    private User assignedTo;
+    @JoinColumn(name = "assignee_id")
+    private User assignee;
 
+    /**
+     * Person who created the task.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
-    private LocalDate startDate;
-
-    private LocalDate dueDate;
-
-    private Integer estimatedHours;
-
-    @Column(nullable = false)
-    private Boolean archived = false;
-
-
+    /**
+     * Optional relation.
+     * A task may or may not belong to a ticket.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ticket_id")
+    private Ticket ticket;
 }
 
 
