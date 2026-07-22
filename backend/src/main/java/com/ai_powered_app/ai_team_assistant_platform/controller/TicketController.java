@@ -1,30 +1,38 @@
 package com.ai_powered_app.ai_team_assistant_platform.controller;
 
-import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketCommentRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketUpdateRequest;
-import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketCommentResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
 import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TicketService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/tickets")
+@RequiredArgsConstructor
 public class TicketController {
 
-    @Autowired
-    private TicketService ticketService;
+    private final TicketService ticketService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<TicketResponse>> createTicket(@Valid @RequestBody TicketRequest ticketRequest){
         TicketResponse response = ticketService.createTicket(ticketRequest);
         ApiResponse<TicketResponse> apiRes = new ApiResponse<>(201, "Ticket created", response);
         return ResponseEntity.status(HttpStatus.CREATED).body(apiRes);
+    }
+
+    @GetMapping("/projects/{projectId}")
+    public ResponseEntity<ApiResponse<List<TicketResponse>>> getProjectTickets(@PathVariable("projectId") Long projectId){
+        List<TicketResponse> responses = ticketService.getProjectTickets(projectId);
+        ApiResponse<List<TicketResponse>> apiRes = new ApiResponse<>(200, "Project tickets fetched", responses);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 
     @GetMapping("/{ticketId}")
@@ -39,13 +47,6 @@ public class TicketController {
         TicketResponse response = ticketService.updateTicket(ticketId, ticketUpdateRequest);
         ApiResponse<TicketResponse> apiRes = new ApiResponse<>(200, "Ticket updated", response);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
-    }
-
-    @PostMapping("/{ticketId}/comments")
-    public ResponseEntity<ApiResponse<TicketCommentResponse>> addTicketComment(@PathVariable("ticketId") Long ticketId, @Valid @RequestBody TicketCommentRequest ticketCommentRequest){
-        TicketCommentResponse response = ticketService.addTicketComment(ticketId, ticketCommentRequest);
-        ApiResponse<TicketCommentResponse> apiRes = new ApiResponse<>(201, "Ticket comment added", response);
-        return ResponseEntity.status(HttpStatus.CREATED).body(apiRes);
     }
 
     @DeleteMapping("/{ticketId}")

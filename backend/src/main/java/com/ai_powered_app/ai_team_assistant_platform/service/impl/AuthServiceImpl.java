@@ -22,8 +22,11 @@ import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.AuthServ
 import com.ai_powered_app.ai_team_assistant_platform.utils.AuthUtil;
 import com.ai_powered_app.ai_team_assistant_platform.utils.CalculateRemainingTime;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+import lombok.RequiredArgsConstructor;
+
+import java.time.Duration;
+import java.util.Date;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -33,36 +36,19 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.util.Date;
 
 @Service
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    @Lazy
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private JWTService jwtService;
-
-    @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
-
-    @Autowired
-    private UserRedisService redisService;
-
-    @Autowired
-    private JwtBlacklistService jwtBlacklistService;
-
-    @Autowired
-    private AuthUtil authUtil;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JWTService jwtService;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final UserRedisService redisService;
+    private final JwtBlacklistService jwtBlacklistService;
+    private final AuthUtil authUtil;
 
 
     @Override

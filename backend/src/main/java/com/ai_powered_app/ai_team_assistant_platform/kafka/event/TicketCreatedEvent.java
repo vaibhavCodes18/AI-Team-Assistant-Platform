@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Data
 @Builder
@@ -23,7 +23,5 @@ public class TicketCreatedEvent {
 
     private Long createdByUserId;
 
-    private Long assignedUserId;
-
-    private LocalDateTime createdAt;
+    private LocalDate dueDate;
 }

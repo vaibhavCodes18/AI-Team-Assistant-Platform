@@ -2,6 +2,8 @@ package com.ai_powered_app.ai_team_assistant_platform.dto.request;
 
 import com.ai_powered_app.ai_team_assistant_platform.enums.TicketPriority;
 import com.ai_powered_app.ai_team_assistant_platform.enums.TicketStatus;
+import com.ai_powered_app.ai_team_assistant_platform.enums.TicketType;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -33,7 +35,8 @@ public class TicketRequest {
     @NotNull(message = "Ticket priority is required")
     private TicketPriority priority;
 
-    private String assigneeEmail;
+    @NotNull(message = "Ticket type is required")
+    private TicketType type;
 
     private LocalDate dueDate;
 }

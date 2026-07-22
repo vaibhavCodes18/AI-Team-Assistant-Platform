@@ -1,13 +1,13 @@
 package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
-import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketCommentRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketUpdateRequest;
-import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketCommentResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.*;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
 import com.ai_powered_app.ai_team_assistant_platform.enums.NotificationType;
+import com.ai_powered_app.ai_team_assistant_platform.enums.ProjectRole;
+import com.ai_powered_app.ai_team_assistant_platform.enums.TicketStatus;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.event.TicketCreatedEvent;
@@ -15,41 +15,35 @@ import com.ai_powered_app.ai_team_assistant_platform.kafka.producer.TicketEventP
 import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TicketService;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class TicketServiceImpl implements TicketService {
 
-    @Autowired
-    private TicketRepository ticketRepository;
+    private final TicketRepository ticketRepository;
 
-    @Autowired
-    private WorkspaceRepository workspaceRepository;
+    private final WorkspaceRepository workspaceRepository;
 
-    @Autowired
-    private TicketEventProducer ticketEventProducer;
+    private final TicketEventProducer ticketEventProducer;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private WorkspaceMemberRepository workspaceMemberRepository;
+    private final WorkspaceMemberRepository workspaceMemberRepository;
 
-    @Autowired
-    private ProjectRepository projectRepository;
+    private final ProjectRepository projectRepository;
+    
+    private final ProjectMemberRepository projectMemberRepository;
 
-    @Autowired
-    private TicketCommentRepository ticketCommentRepository;
 
-    @Autowired
-    private ActivityLogRepository activityLogRepository;
+    private final ActivityLogRepository activityLogRepository;
 
-    @Autowired
-    private NotificationRepository notificationRepository;
+    private final NotificationRepository notificationRepository;
 
     @Override
     @Transactional
@@ -64,20 +58,22 @@ public class TicketServiceImpl implements TicketService {
         WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
-        if (member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN && member.getRole() != WorkspaceRole.MEMBER) {
-            throw new BadCredentialsException("You do not have permission to create this ticket");
+        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(project.getId(), currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this project"));
+
+        if (!isAuthenticated(member, currentUser, project, projectMember)) {
+            throw new BadCredentialsException("You do not have permission to create this ticket, only project admin, workspace admin or workspace owner can create this ticket");
         }
 
-        User assignee = userRepository.findByEmail(ticketRequest.getAssigneeEmail()).orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
-
+        
         Ticket ticket = new Ticket();
         ticket.setProject(project);
         ticket.setTitle(ticketRequest.getTitle());
         ticket.setDescription(ticketRequest.getDescription());
         ticket.setStatus(ticketRequest.getStatus());
         ticket.setPriority(ticketRequest.getPriority());
-        ticket.setAssignee(assignee);
-        ticket.setCreatedBy(currentUser);
+        ticket.setType(ticketRequest.getType());
+        ticket.setReporter(currentUser);
         ticket.setDueDate(ticketRequest.getDueDate());
 
         Ticket savedTicket = ticketRepository.save(ticket);
@@ -102,19 +98,35 @@ public class TicketServiceImpl implements TicketService {
                         .createdByUserId(
                                 currentUser.getId()
                         )
-                        .assignedUserId(
-                                assignee != null
-                                        ? assignee.getId()
-                                        : null
-                        )
-                        .createdAt(
-                                savedTicket.getCreatedAt()
+                        .dueDate(
+                                savedTicket.getDueDate()
                         )
                         .build();
         ticketEventProducer
                 .publishTicketCreatedEvent(event);
 
         return mapToTicketResponse(savedTicket);
+    }
+
+    @Override
+    public List<TicketResponse> getProjectTickets(Long projectId){
+        User currentUser = getAuthenticateUser();
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Project not found"));
+
+        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+        
+        if(!isAuthenticatedMember(member, currentUser, project)){
+            throw new BadCredentialsException("You do not have permission to get this ticket");
+        }
+
+        List<TicketResponse> tickets = ticketRepository.findByProjectIdAndStatusNotOrderByUpdatedAtDesc(projectId, TicketStatus.CLOSED).stream().map(this::mapToTicketResponse).toList();
+
+        return tickets;
+
     }
 
     @Override
@@ -125,10 +137,11 @@ public class TicketServiceImpl implements TicketService {
 
         Project project = projectRepository.findById(ticket.getProject().getId()).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId()).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
-
-        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())) {
-            throw new BadCredentialsException("You are not a member of this workspace");
+        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+        
+        if(!isAuthenticatedMember(member, currentUser, project)){
+            throw new BadCredentialsException("You do not have permission to get this ticket");
         }
 
         return mapToTicketResponse(ticket);
@@ -149,30 +162,30 @@ public class TicketServiceImpl implements TicketService {
         WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
-        if (member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN && member.getRole() != WorkspaceRole.MEMBER) {
+        ProjectMember projectMembers = projectMemberRepository.findByProjectIdAndUserId(project.getId(),
+                    currentUser.getId()).orElseThrow(() -> new BadCredentialsException("You are not a member of this project"));
+
+        if(!isAuthenticated(member, currentUser, project, projectMembers) || !currentUser.equals(ticket.getReporter())){
             throw new BadCredentialsException("You do not have permission to update this ticket");
         }
 
-        User oldAssignee = ticket.getAssignee();
-        User newAssignee = null;
 
-        if(ticketUpdateRequest.getTitle() != null){
+        if(ticketUpdateRequest.getTitle() != null && !ticketUpdateRequest.getTitle().isEmpty()){
             ticket.setTitle(ticketUpdateRequest.getTitle());
         }
-        if(ticketUpdateRequest.getDescription() != null){
+        if(ticketUpdateRequest.getDescription() != null && !ticketUpdateRequest.getDescription().isEmpty()){
             ticket.setDescription(ticketUpdateRequest.getDescription());
         }
-        if(ticketUpdateRequest.getStatus() != null){
+        if(ticketUpdateRequest.getStatus() != null && !ticketUpdateRequest.getStatus().name().isEmpty()){
             ticket.setStatus(ticketUpdateRequest.getStatus());
         }
-        if(ticketUpdateRequest.getPriority() != null){
+        if(ticketUpdateRequest.getPriority() != null && !ticketUpdateRequest.getPriority().name().isEmpty()){
             ticket.setPriority(ticketUpdateRequest.getPriority());
         }
-        if(ticketUpdateRequest.getAssigneeEmail() != null){
-            newAssignee = userRepository.findByEmail(ticketUpdateRequest.getAssigneeEmail()).orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
-            ticket.setAssignee(newAssignee);
+        if(ticketUpdateRequest.getType() != null && !ticketUpdateRequest.getType().name().isEmpty()){
+            ticket.setType(ticketUpdateRequest.getType());
         }
-        if(ticketUpdateRequest.getDueDate() != null){
+        if(ticketUpdateRequest.getDueDate() != null && !ticketUpdateRequest.getDueDate().toString().isEmpty()){
             ticket.setDueDate(ticketUpdateRequest.getDueDate());
         }
 
@@ -187,55 +200,22 @@ public class TicketServiceImpl implements TicketService {
         activityLog.setMetadata(currentUser.getName() + " updated ticket '" + updatedTicket.getTitle() + "'");
         activityLogRepository.save(activityLog);
 
-        if (newAssignee != null && (oldAssignee == null || !oldAssignee.getId().equals(newAssignee.getId()))) {
+        List<ProjectMember> projectMemberss = projectMemberRepository.findByProjectIdOrderByUpdatedAtDesc(project.getId());
+        List<Notification> notifications = new ArrayList<>();
+
+        for(ProjectMember projectMember : projectMemberss){
+            
             Notification notification = new Notification();
-            notification.setRecipient(newAssignee);
-            notification.setTitle("Ticket Assigned");
-            notification.setMessage("You have been assigned ticket: " + updatedTicket.getTitle());
-            notification.setType(NotificationType.TICKET_ASSIGNED);
+            notification.setRecipient(projectMember.getUser());
+            notification.setTitle("Ticket Updated");
+            notification.setMessage(currentUser.getName() + " updated ticket: " + updatedTicket.getTitle());
+            notification.setType(NotificationType.TICKET_UPDATED);
             notification.setIsRead(false);
-            notificationRepository.save(notification);
+            notifications.add(notification);
         }
+        notificationRepository.saveAll(notifications);
 
         return mapToTicketResponse(updatedTicket);
-    }
-
-    @Override
-    @Transactional
-    public TicketCommentResponse addTicketComment(Long ticketId, TicketCommentRequest ticketCommentRequest) {
-
-        User currentUser = getAuthenticateUser();
-
-        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
-
-        Project project = projectRepository.findById(ticket.getProject().getId()).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-
-        Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId()).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
-
-        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
-                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
-
-        if (member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN && member.getRole() != WorkspaceRole.MEMBER) {
-            throw new BadCredentialsException("You do not have permission to add comment on this ticket");
-        }
-
-        TicketComment ticketComment = new TicketComment();
-        ticketComment.setTicket(ticket);
-        ticketComment.setUser(currentUser);
-        ticketComment.setContent(ticketCommentRequest.getContent());
-
-        TicketComment savedComment = ticketCommentRepository.save(ticketComment);
-
-        ActivityLog activityLog = new ActivityLog();
-        activityLog.setWorkspace(project.getWorkspace());
-        activityLog.setUser(currentUser);
-        activityLog.setAction("TICKET_COMMENT_ADDED");
-        activityLog.setEntityType("TICKET_COMMENT");
-        activityLog.setEntityId(savedComment.getId());
-        activityLog.setMetadata(currentUser.getName() + " commented on ticket '" + ticket.getTitle() + "'");
-        activityLogRepository.save(activityLog);
-
-        return mapToTicketCommentResponse(savedComment);
     }
 
     @Override
@@ -249,12 +229,19 @@ public class TicketServiceImpl implements TicketService {
 
         Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId()).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
 
-        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
+        WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
-        if (member.getRole() != WorkspaceRole.OWNER && member.getRole() != WorkspaceRole.ADMIN ) {
+        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(project.getId(), currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this project"));        
+
+        if(!isAuthenticated(workspaceMember, currentUser, project, projectMember)){
             throw new BadCredentialsException("You do not have permission to delete this ticket");
         }
+
+        ticket.setProject(null);
+        ticketRepository.save(ticket);
+        ticketRepository.deleteById(ticketId);
 
         ActivityLog activityLog = new ActivityLog();
         activityLog.setWorkspace(project.getWorkspace());
@@ -265,22 +252,46 @@ public class TicketServiceImpl implements TicketService {
         activityLog.setMetadata(currentUser.getName() + " deleted ticket '" + ticket.getTitle() + "'");
         activityLogRepository.save(activityLog);
 
-        List<TicketComment> ticketComments = ticketCommentRepository.findByTicketIdOrderByCreatedAtAsc(ticketId);
-        ticketCommentRepository.deleteAll(ticketComments);
+        List<ProjectMember> projectMembersToNotify = projectMemberRepository.findByProjectIdOrderByUpdatedAtDesc(project.getId());
+        List<Notification> notifications = new ArrayList<>();
 
-        ticketRepository.deleteById(ticketId);
+        for(ProjectMember member : projectMembersToNotify){
+            Notification notification = new Notification();
+            notification.setRecipient(member.getUser());
+            notification.setTitle("Ticket Deleted");
+            notification.setMessage(currentUser.getName() + " deleted ticket: " + ticket.getTitle());
+            notification.setType(NotificationType.TASK_DELETED);
+            notification.setIsRead(false);
+            notifications.add(notification);
+        }
+        notificationRepository.saveAll(notifications);
     }
 
-    private TicketCommentResponse mapToTicketCommentResponse(TicketComment ticketComment){
-        return TicketCommentResponse.builder()
-                .id(ticketComment.getId())
-                .content(ticketComment.getContent())
-                .ticketId(ticketComment.getTicket().getId())
-                .userId(ticketComment.getUser().getId())
-                .createdAt(ticketComment.getCreatedAt())
-                .updatedAt(ticketComment.getUpdatedAt())
-                .build();
+    private boolean isAuthenticated(WorkspaceMember workspaceMember, User currentUser, Project project, ProjectMember projectMember){
+        if (workspaceMember.getRole() == WorkspaceRole.OWNER || workspaceMember.getRole() == WorkspaceRole.ADMIN) {
+            return true;
+        } else {
+            if (projectMember.getRole() == ProjectRole.PROJECT_ADMIN) {
+                return true;
+            }
+        }
+        return false;
     }
+
+    private boolean isAuthenticatedMember(WorkspaceMember workspaceMember, User currentUser, Project project){
+        if (workspaceMember.getRole() == WorkspaceRole.OWNER || workspaceMember.getRole() == WorkspaceRole.ADMIN) {
+            return true;
+        } else {
+            boolean isProjectMember = projectMemberRepository.existsByProjectIdAndUserId(project.getId(),
+                    currentUser.getId());
+            if (isProjectMember) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    
 
     private TicketResponse mapToTicketResponse(Ticket ticket){
         return TicketResponse.builder()
@@ -290,12 +301,8 @@ public class TicketServiceImpl implements TicketService {
                 .description(ticket.getDescription())
                 .status(ticket.getStatus())
                 .priority(ticket.getPriority())
-                .assigneeId(ticket.getAssignee() != null ? ticket.getAssignee().getId() : null)
-                .createdById(ticket.getCreatedBy().getId())
+                .reporterId(ticket.getReporter().getId())
                 .dueDate(ticket.getDueDate())
-                .aiSummary(ticket.getAiSummary())
-                .createdAt(ticket.getCreatedAt())
-                .updatedAt(ticket.getUpdatedAt())
                 .build();
     }
 

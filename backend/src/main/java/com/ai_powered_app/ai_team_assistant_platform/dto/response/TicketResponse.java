@@ -8,7 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -21,10 +20,6 @@ public class TicketResponse {
     private String description;
     private TicketStatus status;
     private TicketPriority priority;
-    private Long assigneeId;
-    private Long createdById;
+    private Long reporterId;
     private LocalDate dueDate;
-    private String aiSummary;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

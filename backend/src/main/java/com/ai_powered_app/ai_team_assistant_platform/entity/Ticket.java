@@ -1,5 +1,7 @@
 package com.ai_powered_app.ai_team_assistant_platform.entity;
 
+import java.time.LocalDate;
+
 import com.ai_powered_app.ai_team_assistant_platform.enums.TicketPriority;
 import com.ai_powered_app.ai_team_assistant_platform.enums.TicketStatus;
 import com.ai_powered_app.ai_team_assistant_platform.enums.TicketType;
@@ -17,9 +19,6 @@ import lombok.*;
 @Builder
 public class Ticket extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     @Column(nullable = false)
     private String title;
@@ -42,6 +41,8 @@ public class Ticket extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
+
+    private LocalDate dueDate;
 
     /**
      * Person who created the ticket

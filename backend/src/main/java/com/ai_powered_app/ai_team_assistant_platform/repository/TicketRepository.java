@@ -11,17 +11,13 @@ import java.util.List;
 @Repository
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
-    List<Ticket> findByProjectId(Long projectId);
-
-    List<Ticket> findByAssigneeId(Long assigneeId);
+    List<Ticket> findByProjectIdAndStatusNotOrderByUpdatedAtDesc(Long projectId, TicketStatus status);
 
     List<Ticket> findByCreatedById(Long userId);
 
     List<Ticket> findByProjectIdAndStatus(Long projectId, TicketStatus status);
 
     List<Ticket> findByProjectIdAndPriority(Long projectId, TicketPriority priority);
-
-    List<Ticket> findByAssigneeIdAndStatus(Long assigneeId, TicketStatus status);
 
     List<Ticket> findByStatus(TicketStatus status);
 }

@@ -28,7 +28,7 @@ import com.ai_powered_app.ai_team_assistant_platform.repository.NotificationRepo
 import com.ai_powered_app.ai_team_assistant_platform.repository.ProjectMemberRepository;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.ProjectService;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -39,28 +39,22 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ProjectServiceImpl implements ProjectService {
 
-    @Autowired
-    private WorkspaceRepository workspaceRepository;
+    private final WorkspaceRepository workspaceRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private WorkspaceMemberRepository workspaceMemberRepository;
+    private final WorkspaceMemberRepository workspaceMemberRepository;
 
-    @Autowired
-    private ProjectRepository projectRepository;
+    private final ProjectRepository projectRepository;
 
-    @Autowired
-    private ActivityLogRepository activityLogRepository;
+    private final ActivityLogRepository activityLogRepository;
 
-    @Autowired
-    private NotificationRepository notificationRepository;
+    private final NotificationRepository notificationRepository;
 
-    @Autowired
-    private ProjectMemberRepository projectMemberRepository;
+    private final ProjectMemberRepository projectMemberRepository;
 
     @Override
     @Transactional
@@ -194,7 +188,7 @@ public class ProjectServiceImpl implements ProjectService {
             throw new BadCredentialsException("You are not authorized to get members of this project");
         }
 
-        List<ProjectMember> projectMembers = projectMemberRepository.findByProjectId(projectId);
+        List<ProjectMember> projectMembers = projectMemberRepository.findByProjectIdOrderByUpdatedAtDesc(projectId);
 
         return projectMembers.stream().map(this::getProjectMemberResponse).collect(Collectors.toList());
     }
@@ -396,7 +390,7 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        List<ProjectMember> projectMembers = projectMemberRepository.findByProjectId(projectId);
+        List<ProjectMember> projectMembers = projectMemberRepository.findByProjectIdOrderByUpdatedAtDesc(projectId);
 
         WorkspaceMember member = workspaceMemberRepository
                 .findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
@@ -481,7 +475,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-        List<ProjectMember> projectMembers = projectMemberRepository.findByProjectId(projectId);
+        List<ProjectMember> projectMembers = projectMemberRepository.findByProjectIdOrderByUpdatedAtDesc(projectId);
         WorkspaceMember member = workspaceMemberRepository
                 .findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
