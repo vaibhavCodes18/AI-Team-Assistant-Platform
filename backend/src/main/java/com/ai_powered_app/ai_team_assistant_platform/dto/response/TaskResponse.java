@@ -27,29 +27,13 @@ public class TaskResponse {
 
     private TaskPriority priority;
 
-    private LocalDate startDate;
-
     private LocalDate dueDate;
-
-    private Integer estimatedHours;
-
-    private Boolean archived;
-
-    private Long workspaceId;
-
-    private String workspaceName;
 
     private Long projectId;
 
-    private String projectName;
-
     private Long assignedUserId;
 
-    private String assignedUserName;
-
     private Long createdByUserId;
-
-    private String createdByUserName;
 
     private LocalDateTime createdAt;
 
