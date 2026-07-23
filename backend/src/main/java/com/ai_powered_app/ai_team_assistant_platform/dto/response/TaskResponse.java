@@ -34,6 +34,7 @@ public class TaskResponse {
     private Long assignedUserId;
 
     private Long createdByUserId;
+    private Long ticketId;
 
     private LocalDateTime createdAt;
 

@@ -3,8 +3,6 @@ package com.ai_powered_app.ai_team_assistant_platform.repository;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Task;
 import com.ai_powered_app.ai_team_assistant_platform.enums.TaskPriority;
 import com.ai_powered_app.ai_team_assistant_platform.enums.TaskStatus;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,7 +14,8 @@ import java.util.List;
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long> {
 
-    Page<Task> findByProjectId(Long projectId, Pageable pageable);
+    List<Task> findByProjectIdOrderByUpdatedAtDesc(Long projectId);
+    List<Task> findByTicketIdOrderByUpdatedAtDesc(Long ticketId);
 
     List<Task> findByWorkspaceId(Long workspaceId);
 

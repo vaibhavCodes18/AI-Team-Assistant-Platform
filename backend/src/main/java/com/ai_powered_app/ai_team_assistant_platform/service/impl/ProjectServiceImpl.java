@@ -5,9 +5,13 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateProjectMe
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateProjectRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectMemberResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TaskResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Project;
 import com.ai_powered_app.ai_team_assistant_platform.entity.ProjectMember;
+import com.ai_powered_app.ai_team_assistant_platform.entity.Task;
+import com.ai_powered_app.ai_team_assistant_platform.entity.Ticket;
 import com.ai_powered_app.ai_team_assistant_platform.entity.User;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Workspace;
 import com.ai_powered_app.ai_team_assistant_platform.entity.WorkspaceMember;
@@ -20,6 +24,8 @@ import com.ai_powered_app.ai_team_assistant_platform.enums.ProjectStatus;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.repository.ProjectRepository;
+import com.ai_powered_app.ai_team_assistant_platform.repository.TaskRepository;
+import com.ai_powered_app.ai_team_assistant_platform.repository.TicketRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.UserRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceMemberRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceRepository;
@@ -29,6 +35,7 @@ import com.ai_powered_app.ai_team_assistant_platform.repository.ProjectMemberRep
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.ProjectService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -55,6 +62,9 @@ public class ProjectServiceImpl implements ProjectService {
     private final NotificationRepository notificationRepository;
 
     private final ProjectMemberRepository projectMemberRepository;
+
+    private final TaskRepository taskRepository;
+    private final TicketRepository ticketRepository;
 
     @Override
     @Transactional
@@ -530,6 +540,93 @@ public class ProjectServiceImpl implements ProjectService {
 
         project.setStatus(ProjectStatus.ARCHIVED);
         projectRepository.save(project);
+    }
+    
+    @Override
+    public List<TaskResponse> getProjectTasks(Long projectId) {
+        User currentUser = getAuthenticateUser();
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+        WorkspaceMember workspaceMember = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+        if(!isAuthenticatedMember(workspaceMember, currentUser, project)){
+            throw new BadCredentialsException("You are not authorized to get project tasks");
+        }
+        List<Task> tasks = taskRepository.findByProjectIdOrderByUpdatedAtDesc(projectId);
+        return tasks.stream().map(this::getTaskResponse).toList();
+    }
+
+    @Override 
+    public List<TicketResponse> getProjectTickets(Long projectId){
+        User currentUser = getAuthenticateUser();
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+        WorkspaceMember workspaceMember = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+        if(!isAuthenticatedMember(workspaceMember, currentUser, project)){
+            throw new BadCredentialsException("You are not authorized to get project tasks");
+        }
+        List<Ticket> tickets = ticketRepository.findByProjectIdOrderByUpdatedAtDesc(projectId);
+        return tickets.stream().map(this::getTicketResponse).toList();
+    }
+
+    // private boolean isAuthenticated(WorkspaceMember workspaceMember, User currentUser, Project project, ProjectMember projectMember){
+    //     if (workspaceMember.getRole() == WorkspaceRole.OWNER || workspaceMember.getRole() == WorkspaceRole.ADMIN) {
+    //         return true;
+    //     } else {
+    //         if (projectMember.getRole() == ProjectRole.PROJECT_ADMIN) {
+    //             return true;
+    //         }
+    //     }
+    //     return false;
+    // }
+
+    private boolean isAuthenticatedMember(WorkspaceMember workspaceMember, User currentUser, Project project){
+        if (workspaceMember.getRole() == WorkspaceRole.OWNER || workspaceMember.getRole() == WorkspaceRole.ADMIN) {
+            return true;
+        } else {
+            boolean isProjectMember = projectMemberRepository.existsByProjectIdAndUserId(project.getId(),
+                    currentUser.getId());
+            if (isProjectMember) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private TaskResponse getTaskResponse(Task task) {
+        if (task == null)
+            return null;
+        return TaskResponse.builder()
+                .id(task.getId())
+                .title(task.getTitle())
+                .description(task.getDescription())
+                .status(task.getStatus())
+                .priority(task.getPriority())
+                .dueDate(task.getDueDate())
+                .projectId(task.getProject().getId())
+                .ticketId(task.getTicket() != null ? task.getTicket().getId() : null)
+                .assignedUserId(task.getAssignee() != null ? task.getAssignee().getId() : null)
+                .createdByUserId(task.getCreatedBy().getId())
+                .build();
+    }
+
+    private TicketResponse getTicketResponse(Ticket ticket) {
+        if (ticket == null)
+            return null;
+        return TicketResponse.builder()
+                .id(ticket.getId())
+                .title(ticket.getTitle())
+                .description(ticket.getDescription())
+                .type(ticket.getType())
+                .status(ticket.getStatus())
+                .priority(ticket.getPriority())
+                .dueDate(ticket.getDueDate())
+                .projectId(ticket.getProject().getId())
+                .reporterId(ticket.getReporter() != null ? ticket.getReporter().getId() : null)
+                .build();
     }
 
     private Project setProject(ProjectRequest projectRequest, Workspace workspace, User currentUser) {

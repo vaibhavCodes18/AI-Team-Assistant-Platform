@@ -36,6 +36,8 @@ public class CreateTaskRequest {
      */
     private Long assigneeId;
 
+    private Long projectId;
+
     /**
      * Optional.
      * Null means standalone task.

@@ -43,81 +43,57 @@ public class TaskServiceImpl implements TaskService {
     private final NotificationService notificationService;
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final ProjectRepository projectRepository;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final TicketRepository ticketRepository;
     private final TaskRedisService taskRedisService;
     private final ActivityLogRepository activityLogRepository;
 
     @Override
     @Transactional
-    public TaskResponse createTask(CreateTaskRequest createTaskRequest) {
-
+    public TaskResponse createTask(CreateTaskRequest taskRequest) {
         User currentUser = getAuthenticatedUser();
 
-        Project project = projectRepository.findById(createTaskRequest.getProjectId()).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-        Workspace workspace = project.getWorkspace();
-        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId()).orElseThrow(() -> new ResourceNotFoundException("Members not found"));
+        Project project = projectRepository.findById(taskRequest.getProjectId())
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        if (member.getRole() != WorkspaceRole.ADMIN && member.getRole() != WorkspaceRole.OWNER) {
-            throw new AccessDeniedException("Only OWNER or ADMIN can create task");
-        }
-        User assignedUser = null;
+        WorkspaceMember workspaceMember = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
-        if (createTaskRequest.getAssignedToUserId() != null) {
+        ProjectMember projectMember = projectMemberRepository
+                .findByProjectIdAndUserId(taskRequest.getProjectId(), currentUser.getId()).orElse(null);
 
-            assignedUser = userRepository.findById(
-                            createTaskRequest.getAssignedToUserId())
-                    .orElseThrow(() ->
-                            new ResourceNotFoundException("Assigned user not found."));
-
-            if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(
-                    workspace.getId(),
-                    assignedUser.getId())) {
-
-                throw new BadCredentialsException(
-                        "Assigned user is not a member of this workspace."
-                );
-            }
+        if (!isAuthenticated(workspaceMember, currentUser, project, projectMember)) {
+            throw new BadCredentialsException("You are not authorized to create task in this project");
         }
 
-        Task task = Task.builder()
-                .title(createTaskRequest.getTitle())
-                .description(createTaskRequest.getDescription())
-                .priority(createTaskRequest.getPriority())
-                .status(TaskStatus.TODO)
-                .workspace(workspace)
-                .project(project)
-                .assignedTo(assignedUser)
-                .createdBy(currentUser)
-                .startDate(createTaskRequest.getStartDate())
-                .dueDate(createTaskRequest.getDueDate())
-                .estimatedHours(createTaskRequest.getEstimatedHours())
-                .archived(false)
-                .build();
-        Task savedTask = taskRepository.save(task);
+        Task task = new Task();
+        task.setTitle(taskRequest.getTitle());
+        task.setDescription(taskRequest.getDescription());
+        task.setStatus(TaskStatus.TODO);
+        task.setPriority(taskRequest.getPriority());
+        task.setDueDate(taskRequest.getDueDate());
+        task.setCreatedBy(currentUser);
+        task.setProject(project);
 
-        ActivityLogRequest request = ActivityLogRequest.builder()
-                .workspace(workspace)
-                .user(currentUser)
-                .action(ActivityAction.TASK_CREATED)
-                .entityType(EntityType.TASK)
-                .entityId(savedTask.getId())
-                .metadata("Task '" + savedTask.getTitle() + "' created.")
-                .build();
-
-        activityLogService.logActivity(request);
-
-        if (assignedUser != null) {
-
-            NotificationRequest notificationRequest = NotificationRequest.builder()
-                    .recipient(assignedUser)
-                    .title("Task Assigned")
-                    .message("You have been assigned task: " + task.getTitle())
-                    .type(NotificationType.TASK_ASSIGNED)
-                    .build();
-
-            notificationService.sendNotification(notificationRequest);
+        if (taskRequest.getTicketId() != null && !(taskRequest.getTicketId() > 0L)) {
+            Ticket ticket = ticketRepository.findById(taskRequest.getTicketId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
+            task.setTicket(ticket);
+        } else {
+            task.setTicket(null);
         }
 
-        return mapToTaskResponse(savedTask);
+        if (taskRequest.getAssigneeId() != null && !(taskRequest.getAssigneeId() > 0L)) {
+            User assignee = userRepository.findById(taskRequest.getAssigneeId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            task.setAssignee(assignee);
+        } else {
+            task.setAssignee(null);
+        }
+
+        taskRepository.save(task);
+        return getTaskResponse(task);
     }
 
     @Override
@@ -131,8 +107,8 @@ public class TaskServiceImpl implements TaskService {
                     .orElseThrow(() -> new AccessDeniedException("You are not a member of this workspace"));
 
             if (member.getRole() != WorkspaceRole.OWNER &&
-                member.getRole() != WorkspaceRole.ADMIN &&
-                member.getRole() != WorkspaceRole.MEMBER) {
+                    member.getRole() != WorkspaceRole.ADMIN &&
+                    member.getRole() != WorkspaceRole.MEMBER) {
                 throw new AccessDeniedException("Access denied to view this task");
             }
             return cachedResponse;
@@ -146,8 +122,8 @@ public class TaskServiceImpl implements TaskService {
                 .orElseThrow(() -> new AccessDeniedException("You are not a member of this workspace"));
 
         if (member.getRole() != WorkspaceRole.OWNER &&
-            member.getRole() != WorkspaceRole.ADMIN &&
-            member.getRole() != WorkspaceRole.MEMBER) {
+                member.getRole() != WorkspaceRole.ADMIN &&
+                member.getRole() != WorkspaceRole.MEMBER) {
             throw new AccessDeniedException("Access denied to view this task");
         }
 
@@ -245,7 +221,8 @@ public class TaskServiceImpl implements TaskService {
         User assignedUser = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + request.getUserId()));
 
-        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(task.getWorkspace().getId(), assignedUser.getId())) {
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(task.getWorkspace().getId(),
+                assignedUser.getId())) {
             throw new BadCredentialsException("Assigned user is not a member of this workspace.");
         }
 
@@ -352,7 +329,8 @@ public class TaskServiceImpl implements TaskService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
 
-        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())) {
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(project.getWorkspace().getId(),
+                currentUser.getId())) {
             throw new AccessDeniedException("You are not a member of this workspace");
         }
 
@@ -400,8 +378,7 @@ public class TaskServiceImpl implements TaskService {
                 request.getStatus(),
                 request.getPriority(),
                 request.getAssignedUserId(),
-                request.getProjectId()
-        );
+                request.getProjectId());
         return tasks.stream().map(this::mapToTaskResponse).toList();
     }
 
@@ -412,8 +389,10 @@ public class TaskServiceImpl implements TaskService {
 
         List<Task> completedList = myTasks.stream().filter(t -> t.getStatus() == TaskStatus.DONE).toList();
         List<Task> inProgressList = myTasks.stream().filter(t -> t.getStatus() == TaskStatus.IN_PROGRESS).toList();
-        List<Task> overdueList = myTasks.stream().filter(t -> t.getStatus() != TaskStatus.DONE && t.getDueDate() != null && t.getDueDate().isBefore(LocalDate.now())).toList();
-        List<Task> upcomingList = myTasks.stream().filter(t -> t.getStatus() != TaskStatus.DONE && (t.getDueDate() == null || !t.getDueDate().isBefore(LocalDate.now()))).toList();
+        List<Task> overdueList = myTasks.stream().filter(t -> t.getStatus() != TaskStatus.DONE && t.getDueDate() != null
+                && t.getDueDate().isBefore(LocalDate.now())).toList();
+        List<Task> upcomingList = myTasks.stream().filter(t -> t.getStatus() != TaskStatus.DONE
+                && (t.getDueDate() == null || !t.getDueDate().isBefore(LocalDate.now()))).toList();
         List<Task> activeList = myTasks.stream().filter(t -> t.getStatus() != TaskStatus.DONE).toList();
 
         long totalCount = myTasks.size();
@@ -490,13 +469,11 @@ public class TaskServiceImpl implements TaskService {
                 .assignedUserId(
                         task.getAssignedTo() != null
                                 ? task.getAssignedTo().getId()
-                                : null
-                )
+                                : null)
                 .assignedUserName(
                         task.getAssignedTo() != null
                                 ? task.getAssignedTo().getName()
-                                : null
-                )
+                                : null)
 
                 .createdByUserId(task.getCreatedBy().getId())
                 .createdByUserName(task.getCreatedBy().getName())
@@ -507,8 +484,54 @@ public class TaskServiceImpl implements TaskService {
                 .build();
     }
 
-    private User getAuthenticatedUser(){
+    private boolean isAuthenticated(WorkspaceMember workspaceMember, User currentUser, Project project,
+            ProjectMember projectMember) {
+        if (workspaceMember.getRole() == WorkspaceRole.OWNER || workspaceMember.getRole() == WorkspaceRole.ADMIN) {
+            return true;
+        } else {
+            if (projectMember.getRole() == ProjectRole.PROJECT_ADMIN) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // private boolean isAuthenticatedMember(WorkspaceMember workspaceMember, User
+    // currentUser, Project project){
+    // if (workspaceMember.getRole() == WorkspaceRole.OWNER ||
+    // workspaceMember.getRole() == WorkspaceRole.ADMIN) {
+    // return true;
+    // } else {
+    // boolean isProjectMember =
+    // projectMemberRepository.existsByProjectIdAndUserId(project.getId(),
+    // currentUser.getId());
+    // if (isProjectMember) {
+    // return true;
+    // }
+    // }
+    // return false;
+    // }
+
+    private TaskResponse getTaskResponse(Task task) {
+        if (task == null)
+            return null;
+        return TaskResponse.builder()
+                .id(task.getId())
+                .title(task.getTitle())
+                .description(task.getDescription())
+                .status(task.getStatus())
+                .priority(task.getPriority())
+                .dueDate(task.getDueDate())
+                .projectId(task.getProject().getId())
+                .ticketId(task.getTicket() != null ? task.getTicket().getId() : null)
+                .assignedUserId(task.getAssignee() != null ? task.getAssignee().getId() : null)
+                .createdByUserId(task.getCreatedBy().getId())
+                .build();
+    }
+
+    private User getAuthenticatedUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
     }
 }

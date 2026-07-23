@@ -5,6 +5,8 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateProjectMe
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateProjectRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectMemberResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TaskResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
 
 import java.util.List;
 
@@ -18,4 +20,6 @@ public interface ProjectService {
      ProjectMemberResponse changeProjectMemberRole(Long projectId, Long userId, UpdateProjectMemberRole updateProjectMemberRole);
      ProjectResponse updateProject(Long projectId, UpdateProjectRequest updateProjectRequest);
      void deleteProject(Long projectId);
+     List<TaskResponse> getProjectTasks(Long projectId);
+     List<TicketResponse> getProjectTickets(Long projectId);
 }

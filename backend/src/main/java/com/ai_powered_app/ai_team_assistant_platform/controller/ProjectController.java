@@ -7,9 +7,12 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateProjectRe
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectMemberResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TaskResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
 import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.ProjectService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TaskService;
+import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TicketService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,6 +29,7 @@ public class ProjectController {
     private final ProjectService projectService;
 
     private final TaskService taskService;
+    private final TicketService ticketService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<ProjectResponse>> createProject(@Valid @RequestBody ProjectRequest projectRequest){
@@ -104,6 +108,13 @@ public class ProjectController {
             @PathVariable("projectId") Long projectId) {
         List<TaskResponse> tasks = taskService.getProjectTasks(projectId);
         ApiResponse<List<TaskResponse>> apiRes = new ApiResponse<>(200, "Project tasks fetched successfully", tasks);
+        return ResponseEntity.status(HttpStatus.OK).body(apiRes);
+    }
+    @GetMapping("/{projectId}/tickets")
+    public ResponseEntity<ApiResponse<List<TicketResponse>>> getRecentProjectTickets(
+            @PathVariable("projectId") Long projectId) {
+        List<TicketResponse> tasks = ticketService.getProjectTickets(projectId);
+        ApiResponse<List<TicketResponse>> apiRes = new ApiResponse<>(200, "Project tasks fetched successfully", tasks);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 

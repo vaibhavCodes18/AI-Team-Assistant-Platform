@@ -2,6 +2,7 @@ package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketUpdateRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TaskResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.*;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
@@ -27,6 +28,7 @@ import java.util.List;
 public class TicketServiceImpl implements TicketService {
 
     private final TicketRepository ticketRepository;
+    private final TaskRepository taskRepository;
 
     private final WorkspaceRepository workspaceRepository;
 
@@ -37,9 +39,8 @@ public class TicketServiceImpl implements TicketService {
     private final WorkspaceMemberRepository workspaceMemberRepository;
 
     private final ProjectRepository projectRepository;
-    
-    private final ProjectMemberRepository projectMemberRepository;
 
+    private final ProjectMemberRepository projectMemberRepository;
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -51,21 +52,25 @@ public class TicketServiceImpl implements TicketService {
 
         User currentUser = getAuthenticateUser();
 
-        Project project = projectRepository.findById(ticketRequest.getProjectId()).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+        Project project = projectRepository.findById(ticketRequest.getProjectId())
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId()).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
+        Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
 
-        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
+        WorkspaceMember member = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
-        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(project.getId(), currentUser.getId())
+        ProjectMember projectMember = projectMemberRepository
+                .findByProjectIdAndUserId(project.getId(), currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this project"));
 
         if (!isAuthenticated(member, currentUser, project, projectMember)) {
-            throw new BadCredentialsException("You do not have permission to create this ticket, only project admin, workspace admin or workspace owner can create this ticket");
+            throw new BadCredentialsException(
+                    "You do not have permission to create this ticket, only project admin, workspace admin or workspace owner can create this ticket");
         }
 
-        
         Ticket ticket = new Ticket();
         ticket.setProject(project);
         ticket.setTitle(ticketRequest.getTitle());
@@ -87,21 +92,17 @@ public class TicketServiceImpl implements TicketService {
         activityLog.setMetadata(currentUser.getName() + " created ticket '" + savedTicket.getTitle() + "'");
         activityLogRepository.save(activityLog);
 
-        TicketCreatedEvent event =
-                TicketCreatedEvent.builder()
-                        .ticketId(savedTicket.getId())
-                        .title(savedTicket.getTitle())
-                        .projectId(project.getId())
-                        .workspaceId(
-                                project.getWorkspace().getId()
-                        )
-                        .createdByUserId(
-                                currentUser.getId()
-                        )
-                        .dueDate(
-                                savedTicket.getDueDate()
-                        )
-                        .build();
+        TicketCreatedEvent event = TicketCreatedEvent.builder()
+                .ticketId(savedTicket.getId())
+                .title(savedTicket.getTitle())
+                .projectId(project.getId())
+                .workspaceId(
+                        project.getWorkspace().getId())
+                .createdByUserId(
+                        currentUser.getId())
+                .dueDate(
+                        savedTicket.getDueDate())
+                .build();
         ticketEventProducer
                 .publishTicketCreatedEvent(event);
 
@@ -109,21 +110,23 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
-    public List<TicketResponse> getProjectTickets(Long projectId){
+    public List<TicketResponse> getProjectTickets(Long projectId) {
         User currentUser = getAuthenticateUser();
 
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Project not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
+        WorkspaceMember member = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
-        
-        if(!isAuthenticatedMember(member, currentUser, project)){
+
+        if (!isAuthenticatedMember(member, currentUser, project)) {
             throw new BadCredentialsException("You do not have permission to get this ticket");
         }
 
-        List<TicketResponse> tickets = ticketRepository.findByProjectIdAndStatusNotOrderByUpdatedAtDesc(projectId, TicketStatus.CLOSED).stream().map(this::mapToTicketResponse).toList();
+        List<TicketResponse> tickets = ticketRepository
+                .findByProjectIdAndStatusNotOrderByUpdatedAtDesc(projectId, TicketStatus.CLOSED).stream()
+                .map(this::mapToTicketResponse).toList();
 
         return tickets;
 
@@ -133,14 +136,17 @@ public class TicketServiceImpl implements TicketService {
     public TicketResponse getTicketById(Long ticketId) {
         User currentUser = getAuthenticateUser();
 
-        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
 
-        Project project = projectRepository.findById(ticket.getProject().getId()).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+        Project project = projectRepository.findById(ticket.getProject().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
+        WorkspaceMember member = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
-        
-        if(!isAuthenticatedMember(member, currentUser, project)){
+
+        if (!isAuthenticatedMember(member, currentUser, project)) {
             throw new BadCredentialsException("You do not have permission to get this ticket");
         }
 
@@ -153,39 +159,44 @@ public class TicketServiceImpl implements TicketService {
 
         User currentUser = getAuthenticateUser();
 
-        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
 
-        Project project = projectRepository.findById(ticket.getProject().getId()).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+        Project project = projectRepository.findById(ticket.getProject().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId()).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
+        Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
 
-        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
+        WorkspaceMember member = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
         ProjectMember projectMembers = projectMemberRepository.findByProjectIdAndUserId(project.getId(),
-                    currentUser.getId()).orElseThrow(() -> new BadCredentialsException("You are not a member of this project"));
+                currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this project"));
 
-        if(!isAuthenticated(member, currentUser, project, projectMembers) || !currentUser.equals(ticket.getReporter())){
+        if (!isAuthenticated(member, currentUser, project, projectMembers)
+                || !currentUser.equals(ticket.getReporter())) {
             throw new BadCredentialsException("You do not have permission to update this ticket");
         }
 
-
-        if(ticketUpdateRequest.getTitle() != null && !ticketUpdateRequest.getTitle().isEmpty()){
+        if (ticketUpdateRequest.getTitle() != null && !ticketUpdateRequest.getTitle().isEmpty()) {
             ticket.setTitle(ticketUpdateRequest.getTitle());
         }
-        if(ticketUpdateRequest.getDescription() != null && !ticketUpdateRequest.getDescription().isEmpty()){
+        if (ticketUpdateRequest.getDescription() != null && !ticketUpdateRequest.getDescription().isEmpty()) {
             ticket.setDescription(ticketUpdateRequest.getDescription());
         }
-        if(ticketUpdateRequest.getStatus() != null && !ticketUpdateRequest.getStatus().name().isEmpty()){
+        if (ticketUpdateRequest.getStatus() != null && !ticketUpdateRequest.getStatus().name().isEmpty()) {
             ticket.setStatus(ticketUpdateRequest.getStatus());
         }
-        if(ticketUpdateRequest.getPriority() != null && !ticketUpdateRequest.getPriority().name().isEmpty()){
+        if (ticketUpdateRequest.getPriority() != null && !ticketUpdateRequest.getPriority().name().isEmpty()) {
             ticket.setPriority(ticketUpdateRequest.getPriority());
         }
-        if(ticketUpdateRequest.getType() != null && !ticketUpdateRequest.getType().name().isEmpty()){
+        if (ticketUpdateRequest.getType() != null && !ticketUpdateRequest.getType().name().isEmpty()) {
             ticket.setType(ticketUpdateRequest.getType());
         }
-        if(ticketUpdateRequest.getDueDate() != null && !ticketUpdateRequest.getDueDate().toString().isEmpty()){
+        if (ticketUpdateRequest.getDueDate() != null && !ticketUpdateRequest.getDueDate().toString().isEmpty()) {
             ticket.setDueDate(ticketUpdateRequest.getDueDate());
         }
 
@@ -200,11 +211,12 @@ public class TicketServiceImpl implements TicketService {
         activityLog.setMetadata(currentUser.getName() + " updated ticket '" + updatedTicket.getTitle() + "'");
         activityLogRepository.save(activityLog);
 
-        List<ProjectMember> projectMemberss = projectMemberRepository.findByProjectIdOrderByUpdatedAtDesc(project.getId());
+        List<ProjectMember> projectMemberss = projectMemberRepository
+                .findByProjectIdOrderByUpdatedAtDesc(project.getId());
         List<Notification> notifications = new ArrayList<>();
 
-        for(ProjectMember projectMember : projectMemberss){
-            
+        for (ProjectMember projectMember : projectMemberss) {
+
             Notification notification = new Notification();
             notification.setRecipient(projectMember.getUser());
             notification.setTitle("Ticket Updated");
@@ -223,19 +235,24 @@ public class TicketServiceImpl implements TicketService {
     public void deleteTicket(Long ticketId) {
         User currentUser = getAuthenticateUser();
 
-        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
 
-        Project project = projectRepository.findById(ticket.getProject().getId()).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+        Project project = projectRepository.findById(ticket.getProject().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId()).orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
+        Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
 
-        WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
+        WorkspaceMember workspaceMember = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
-        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(project.getId(), currentUser.getId())
-                .orElseThrow(() -> new BadCredentialsException("You are not a member of this project"));        
+        ProjectMember projectMember = projectMemberRepository
+                .findByProjectIdAndUserId(project.getId(), currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this project"));
 
-        if(!isAuthenticated(workspaceMember, currentUser, project, projectMember)){
+        if (!isAuthenticated(workspaceMember, currentUser, project, projectMember)) {
             throw new BadCredentialsException("You do not have permission to delete this ticket");
         }
 
@@ -252,10 +269,11 @@ public class TicketServiceImpl implements TicketService {
         activityLog.setMetadata(currentUser.getName() + " deleted ticket '" + ticket.getTitle() + "'");
         activityLogRepository.save(activityLog);
 
-        List<ProjectMember> projectMembersToNotify = projectMemberRepository.findByProjectIdOrderByUpdatedAtDesc(project.getId());
+        List<ProjectMember> projectMembersToNotify = projectMemberRepository
+                .findByProjectIdOrderByUpdatedAtDesc(project.getId());
         List<Notification> notifications = new ArrayList<>();
 
-        for(ProjectMember member : projectMembersToNotify){
+        for (ProjectMember member : projectMembersToNotify) {
             Notification notification = new Notification();
             notification.setRecipient(member.getUser());
             notification.setTitle("Ticket Deleted");
@@ -267,7 +285,46 @@ public class TicketServiceImpl implements TicketService {
         notificationRepository.saveAll(notifications);
     }
 
-    private boolean isAuthenticated(WorkspaceMember workspaceMember, User currentUser, Project project, ProjectMember projectMember){
+    @Override
+    public List<TaskResponse> getTicketTasks(Long ticketId) {
+
+        User currentUser = getAuthenticateUser();
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with this ticketId"));
+
+        Project project = projectRepository.findById(ticket.getProject().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with this projectId"));
+        WorkspaceMember workspaceMember = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
+                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
+        if (!isAuthenticatedMember(workspaceMember, currentUser, project)) {
+            throw new BadCredentialsException("You are not authorized to get project tasks");
+        }
+        List<Task> tasks = taskRepository.findByTicketIdOrderByUpdatedAtDesc(ticketId);
+        return tasks.stream().map(this::getTaskResponse).toList();
+
+    }
+
+    private TaskResponse getTaskResponse(Task task) {
+        if (task == null)
+            return null;
+        return TaskResponse.builder()
+                .id(task.getId())
+                .title(task.getTitle())
+                .description(task.getDescription())
+                .status(task.getStatus())
+                .priority(task.getPriority())
+                .dueDate(task.getDueDate())
+                .projectId(task.getProject().getId())
+                .ticketId(task.getTicket() != null ? task.getTicket().getId() : null)
+                .assignedUserId(task.getAssignee() != null ? task.getAssignee().getId() : null)
+                .createdByUserId(task.getCreatedBy().getId())
+                .build();
+    }
+
+    private boolean isAuthenticated(WorkspaceMember workspaceMember, User currentUser, Project project,
+            ProjectMember projectMember) {
         if (workspaceMember.getRole() == WorkspaceRole.OWNER || workspaceMember.getRole() == WorkspaceRole.ADMIN) {
             return true;
         } else {
@@ -278,7 +335,7 @@ public class TicketServiceImpl implements TicketService {
         return false;
     }
 
-    private boolean isAuthenticatedMember(WorkspaceMember workspaceMember, User currentUser, Project project){
+    private boolean isAuthenticatedMember(WorkspaceMember workspaceMember, User currentUser, Project project) {
         if (workspaceMember.getRole() == WorkspaceRole.OWNER || workspaceMember.getRole() == WorkspaceRole.ADMIN) {
             return true;
         } else {
@@ -291,9 +348,7 @@ public class TicketServiceImpl implements TicketService {
         return false;
     }
 
-    
-
-    private TicketResponse mapToTicketResponse(Ticket ticket){
+    private TicketResponse mapToTicketResponse(Ticket ticket) {
         return TicketResponse.builder()
                 .id(ticket.getId())
                 .projectId(ticket.getProject().getId())
@@ -306,8 +361,9 @@ public class TicketServiceImpl implements TicketService {
                 .build();
     }
 
-    private User getAuthenticateUser(){
+    private User getAuthenticateUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with this email."));
     }
 }
