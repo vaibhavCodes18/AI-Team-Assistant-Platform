@@ -12,7 +12,6 @@ import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundE
 import com.ai_powered_app.ai_team_assistant_platform.repository.UserRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceRepository;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.AdminService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class AdminServiceImpl implements AdminService {
 
     private final PasswordEncoder passwordEncoder;
@@ -28,6 +26,12 @@ public class AdminServiceImpl implements AdminService {
     private final UserRepository userRepository;
 
     private final WorkspaceRepository workspaceRepository;
+
+    public AdminServiceImpl(PasswordEncoder passwordEncoder, UserRepository userRepository, WorkspaceRepository workspaceRepository) {
+        this.passwordEncoder = passwordEncoder;
+        this.userRepository = userRepository;
+        this.workspaceRepository = workspaceRepository;
+    }
 
     @Override
     public UserResponse registerAdmin(UserRegistrationRequest userRegistrationRequest) {

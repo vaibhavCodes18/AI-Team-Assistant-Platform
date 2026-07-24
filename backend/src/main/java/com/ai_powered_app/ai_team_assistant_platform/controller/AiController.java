@@ -3,7 +3,6 @@ package com.ai_powered_app.ai_team_assistant_platform.controller;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.GenerateDocsResponse;
 import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.AiDocumentationService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,10 +12,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/ai")
-@RequiredArgsConstructor
 public class AiController {
 
     private final AiDocumentationService aiDocumentationService;
+
+    public AiController(AiDocumentationService aiDocumentationService) {
+        this.aiDocumentationService = aiDocumentationService;
+    }
 
     @PostMapping(
             value = "/generate-docs",

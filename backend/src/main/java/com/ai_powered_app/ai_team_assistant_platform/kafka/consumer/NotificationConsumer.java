@@ -7,18 +7,21 @@ import com.ai_powered_app.ai_team_assistant_platform.kafka.event.TicketCreatedEv
 import com.ai_powered_app.ai_team_assistant_platform.kafka.topic.KafkaTopics;
 import com.ai_powered_app.ai_team_assistant_platform.repository.NotificationRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class NotificationConsumer {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+
+    public NotificationConsumer(NotificationRepository notificationRepository, UserRepository userRepository) {
+        this.notificationRepository = notificationRepository;
+        this.userRepository = userRepository;
+    }
 
     @KafkaListener(
             topics = KafkaTopics.TICKET_CREATED,
@@ -34,21 +37,21 @@ public class NotificationConsumer {
                 event.getTicketId()
         );
 
-        if (event.getAssignedUserId() == null) {
+        if (event.getCreatedByUserId() == null) {
             return;
         }
 
-        User assignee = userRepository
-                .findById(event.getAssignedUserId())
+        User user = userRepository
+                .findById(event.getCreatedByUserId())
                 .orElse(null);
 
-        if (assignee == null) {
+        if (user == null) {
             return;
         }
 
         Notification notification = new Notification();
 
-        notification.setRecipient(assignee);
+        notification.setRecipient(user);
 
         notification.setTitle(
                 "Ticket Assigned"
@@ -69,7 +72,7 @@ public class NotificationConsumer {
 
         log.info(
                 "Notification created successfully for userId={}",
-                assignee.getId()
+                user.getId()
         );
     }
 }

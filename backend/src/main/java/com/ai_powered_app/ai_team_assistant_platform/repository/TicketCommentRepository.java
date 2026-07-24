@@ -9,7 +9,7 @@ import java.util.List;
 @Repository
 public interface TicketCommentRepository extends JpaRepository<TaskComment, Long> {
 
-    List<TaskComment> findByTicketIdOrderByCreatedAtAsc(Long ticketId);
+    List<TaskComment> findByTaskIdOrderByCreatedAtAsc(Long taskId);
 
     List<TaskComment> findByUserId(Long userId);
 }

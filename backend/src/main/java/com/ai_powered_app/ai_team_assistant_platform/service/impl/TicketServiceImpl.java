@@ -15,7 +15,6 @@ import com.ai_powered_app.ai_team_assistant_platform.kafka.producer.TicketEventP
 import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TicketService;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class TicketServiceImpl implements TicketService {
 
     private final TicketRepository ticketRepository;
@@ -44,6 +42,28 @@ public class TicketServiceImpl implements TicketService {
     private final ActivityLogRepository activityLogRepository;
 
     private final NotificationRepository notificationRepository;
+
+    public TicketServiceImpl(TicketRepository ticketRepository,
+                             TaskRepository taskRepository,
+                             WorkspaceRepository workspaceRepository,
+                             TicketEventProducer ticketEventProducer,
+                             UserRepository userRepository,
+                             WorkspaceMemberRepository workspaceMemberRepository,
+                             ProjectRepository projectRepository,
+                             ProjectMemberRepository projectMemberRepository,
+                             ActivityLogRepository activityLogRepository,
+                             NotificationRepository notificationRepository) {
+        this.ticketRepository = ticketRepository;
+        this.taskRepository = taskRepository;
+        this.workspaceRepository = workspaceRepository;
+        this.ticketEventProducer = ticketEventProducer;
+        this.userRepository = userRepository;
+        this.workspaceMemberRepository = workspaceMemberRepository;
+        this.projectRepository = projectRepository;
+        this.projectMemberRepository = projectMemberRepository;
+        this.activityLogRepository = activityLogRepository;
+        this.notificationRepository = notificationRepository;
+    }
 
     @Override
     @Transactional
@@ -188,7 +208,7 @@ public class TicketServiceImpl implements TicketService {
         activityLogRepository.save(activityLog);
 
         List<ProjectMember> projectMemberss = projectMemberRepository
-                .findByProjectIdOrderByUpdatedAtDesc(project.getId());
+                .findByProjectIdOrderByIdDesc(project.getId());
         List<Notification> notifications = new ArrayList<>();
 
         for (ProjectMember projectMember : projectMemberss) {
@@ -246,7 +266,7 @@ public class TicketServiceImpl implements TicketService {
         activityLogRepository.save(activityLog);
 
         List<ProjectMember> projectMembersToNotify = projectMemberRepository
-                .findByProjectIdOrderByUpdatedAtDesc(project.getId());
+                .findByProjectIdOrderByIdDesc(project.getId());
         List<Notification> notifications = new ArrayList<>();
 
         for (ProjectMember member : projectMembersToNotify) {

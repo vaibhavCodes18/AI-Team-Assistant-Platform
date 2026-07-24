@@ -2,18 +2,19 @@ package com.ai_powered_app.ai_team_assistant_platform.kafka.producer;
 
 import com.ai_powered_app.ai_team_assistant_platform.kafka.event.DocumentUploadedEvent;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.topic.KafkaTopics;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class DocumentEventProducer {
 
-    private final KafkaTemplate<String, Object
-            > kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    public DocumentEventProducer(KafkaTemplate<String, Object> kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
 
     public void publishDocumentUploadedEvent(
             DocumentUploadedEvent event

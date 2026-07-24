@@ -4,18 +4,21 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.DocumentViewRe
 import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.DocumentRedisService;
 import com.ai_powered_app.ai_team_assistant_platform.utils.RedisUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
 @Service
-@RequiredArgsConstructor
 public class DocumentRedisServiceImpl implements DocumentRedisService {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
+
+    public DocumentRedisServiceImpl(RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
+        this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public void saveDocumentRedis(Long id, DocumentViewResponse value, Duration duration) {

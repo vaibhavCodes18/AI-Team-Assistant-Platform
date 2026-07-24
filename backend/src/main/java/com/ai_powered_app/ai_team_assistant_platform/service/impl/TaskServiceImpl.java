@@ -14,14 +14,12 @@ import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.ActivityLogService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TaskService;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
 @Service
-@RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
 
         private final UserRepository userRepository;
@@ -32,6 +30,24 @@ public class TaskServiceImpl implements TaskService {
         private final ProjectMemberRepository projectMemberRepository;
         private final TicketRepository ticketRepository;
         private final TaskRedisService taskRedisService;
+
+        public TaskServiceImpl(UserRepository userRepository,
+                               TaskRepository taskRepository,
+                               ActivityLogService activityLogService,
+                               WorkspaceMemberRepository workspaceMemberRepository,
+                               ProjectRepository projectRepository,
+                               ProjectMemberRepository projectMemberRepository,
+                               TicketRepository ticketRepository,
+                               TaskRedisService taskRedisService) {
+                this.userRepository = userRepository;
+                this.taskRepository = taskRepository;
+                this.activityLogService = activityLogService;
+                this.workspaceMemberRepository = workspaceMemberRepository;
+                this.projectRepository = projectRepository;
+                this.projectMemberRepository = projectMemberRepository;
+                this.ticketRepository = ticketRepository;
+                this.taskRedisService = taskRedisService;
+        }
 
         @Override
         @Transactional

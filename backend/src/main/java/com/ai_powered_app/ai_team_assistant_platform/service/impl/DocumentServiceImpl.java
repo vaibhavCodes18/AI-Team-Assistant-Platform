@@ -16,7 +16,6 @@ import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.DocumentService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.FileStorageService;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -27,7 +26,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class DocumentServiceImpl implements DocumentService {
 
         private final DocumentRepository documentRepository;
@@ -45,6 +43,26 @@ public class DocumentServiceImpl implements DocumentService {
         private final SummaryRedisService redisSummaryService;
         private final DocumentRedisService redisDocumentService;
         private final ActivityLogRepository activityLogRepository;
+
+        public DocumentServiceImpl(DocumentRepository documentRepository,
+                                   ProjectRepository projectRepository,
+                                   UserRepository userRepository,
+                                   FileStorageService fileStorageService,
+                                   DocumentEventProducer documentEventProducer,
+                                   WorkspaceMemberRepository workspaceMemberRepository,
+                                   SummaryRedisService redisSummaryService,
+                                   DocumentRedisService redisDocumentService,
+                                   ActivityLogRepository activityLogRepository) {
+                this.documentRepository = documentRepository;
+                this.projectRepository = projectRepository;
+                this.userRepository = userRepository;
+                this.fileStorageService = fileStorageService;
+                this.documentEventProducer = documentEventProducer;
+                this.workspaceMemberRepository = workspaceMemberRepository;
+                this.redisSummaryService = redisSummaryService;
+                this.redisDocumentService = redisDocumentService;
+                this.activityLogRepository = activityLogRepository;
+        }
 
         @Override
         @Transactional

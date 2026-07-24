@@ -1,11 +1,10 @@
 package com.ai_powered_app.ai_team_assistant_platform.security.oauth2;
 
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserLoginResponse;
-import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.AuthService;
+import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.Oauth2Service;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
 
@@ -32,7 +30,11 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
     @Value("${app.oauth2.authorized-redirect-uri:http://localhost:5173/oauth2/success}")
     private String authorizedRedirectUri;
 
-    private final AuthService authService;
+    private final Oauth2Service oauth2Service;
+
+    public Oauth2SuccessHandler(Oauth2Service oauth2Service) {
+        this.oauth2Service = oauth2Service;
+    }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -41,7 +43,7 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
         OAuth2User user = (OAuth2User) authentication.getPrincipal();
         String registrationId = token.getAuthorizedClientRegistrationId();
 
-        UserLoginResponse loginResponse = authService.handleOauth2LoinRequest(user, registrationId);
+        UserLoginResponse loginResponse = oauth2Service.handleOauth2LoinRequest(user, registrationId);
 
         // Add access_token cookie (non-HttpOnly so frontend JS can read it, short
         // lifespan of 15 min)

@@ -7,19 +7,23 @@ import com.ai_powered_app.ai_team_assistant_platform.repository.ActivityLogRepos
 import com.ai_powered_app.ai_team_assistant_platform.utils.AiPrompt;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AiServiceImpl implements AiService {
     private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
     private final ActivityLogRepository activityLogRepository;
+
+    public AiServiceImpl(ChatClient chatClient, ObjectMapper objectMapper, ActivityLogRepository activityLogRepository) {
+        this.chatClient = chatClient;
+        this.objectMapper = objectMapper;
+        this.activityLogRepository = activityLogRepository;
+    }
 
     @Override
     public String generateSummary(String content) {

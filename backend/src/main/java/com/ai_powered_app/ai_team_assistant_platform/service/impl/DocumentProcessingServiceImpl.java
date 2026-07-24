@@ -9,7 +9,6 @@ import com.ai_powered_app.ai_team_assistant_platform.ai.interfaces.AiService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.DocumentProcessingService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.TextExtractionService;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +17,6 @@ import java.time.Duration;
 @Service
 @Transactional
 @Slf4j
-@RequiredArgsConstructor
 public class DocumentProcessingServiceImpl implements DocumentProcessingService {
 
     private final DocumentRepository documentRepository;
@@ -28,6 +26,16 @@ public class DocumentProcessingServiceImpl implements DocumentProcessingService 
     private final AiService aiSummaryService;
 
     private final SummaryRedisService redisService;
+
+    public DocumentProcessingServiceImpl(DocumentRepository documentRepository,
+                                         TextExtractionService textExtractionService,
+                                         AiService aiSummaryService,
+                                         SummaryRedisService redisService) {
+        this.documentRepository = documentRepository;
+        this.textExtractionService = textExtractionService;
+        this.aiSummaryService = aiSummaryService;
+        this.redisService = redisService;
+    }
 
 
     @Override

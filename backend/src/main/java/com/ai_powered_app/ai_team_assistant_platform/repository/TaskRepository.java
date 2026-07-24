@@ -17,24 +17,23 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findByProjectIdOrderByUpdatedAtDesc(Long projectId);
     List<Task> findByTicketIdOrderByUpdatedAtDesc(Long ticketId);
 
-    List<Task> findByWorkspaceId(Long workspaceId);
+    List<Task> findByProjectWorkspaceId(Long workspaceId);
 
-    List<Task> findByAssignedToId(Long userId);
+    List<Task> findByAssigneeId(Long userId);
 
-    @Query("SELECT t FROM Task t JOIN WorkspaceMember wm ON t.workspace.id = wm.workspace.id " +
+    @Query("SELECT t FROM Task t JOIN WorkspaceMember wm ON t.project.workspace.id = wm.workspace.id " +
            "WHERE wm.user.id = :userId AND (wm.role = com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole.OWNER " +
            "OR wm.role = com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole.ADMIN) " +
-           "AND t.dueDate < :today AND t.status != com.ai_powered_app.ai_team_assistant_platform.enums.TaskStatus.DONE AND t.archived = false")
+           "AND t.dueDate < :today AND t.status != com.ai_powered_app.ai_team_assistant_platform.enums.TaskStatus.DONE")
     List<Task> findOverdueTasksForOwnerOrAdmin(@Param("userId") Long userId, @Param("today") LocalDate today);
 
-    @Query("SELECT t FROM Task t JOIN WorkspaceMember wm ON t.workspace.id = wm.workspace.id " +
+    @Query("SELECT t FROM Task t JOIN WorkspaceMember wm ON t.project.workspace.id = wm.workspace.id " +
            "WHERE wm.user.id = :userId AND " +
            "(:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
            "(:status IS NULL OR t.status = :status) AND " +
            "(:priority IS NULL OR t.priority = :priority) AND " +
-           "(:assignedUserId IS NULL OR t.assignedTo.id = :assignedUserId) AND " +
-           "(:projectId IS NULL OR t.project.id = :projectId) AND " +
-           "t.archived = false")
+           "(:assignedUserId IS NULL OR t.assignee.id = :assignedUserId) AND " +
+           "(:projectId IS NULL OR t.project.id = :projectId)")
     List<Task> searchTasksForUser(@Param("userId") Long userId,
                                   @Param("keyword") String keyword,
                                   @Param("status") TaskStatus status,

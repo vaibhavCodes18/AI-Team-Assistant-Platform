@@ -13,7 +13,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     List<Ticket> findByProjectIdAndStatusNotOrderByUpdatedAtDesc(Long projectId, TicketStatus status);
 
-    List<Ticket> findByCreatedById(Long userId);
+    List<Ticket> findByReporterId(Long userId);
 
     List<Ticket> findByProjectIdOrderByUpdatedAtDesc(Long projectId);
 

@@ -22,8 +22,6 @@ import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.AuthServ
 import com.ai_powered_app.ai_team_assistant_platform.utils.AuthUtil;
 import com.ai_powered_app.ai_team_assistant_platform.utils.CalculateRemainingTime;
 
-import lombok.RequiredArgsConstructor;
-
 import java.time.Duration;
 import java.util.Date;
 
@@ -32,13 +30,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
-@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -49,6 +45,24 @@ public class AuthServiceImpl implements AuthService {
     private final UserRedisService redisService;
     private final JwtBlacklistService jwtBlacklistService;
     private final AuthUtil authUtil;
+
+    public AuthServiceImpl(UserRepository userRepository,
+                           PasswordEncoder passwordEncoder,
+                           AuthenticationManager authenticationManager,
+                           JWTService jwtService,
+                           RefreshTokenRepository refreshTokenRepository,
+                           UserRedisService redisService,
+                           JwtBlacklistService jwtBlacklistService,
+                           AuthUtil authUtil) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.redisService = redisService;
+        this.jwtBlacklistService = jwtBlacklistService;
+        this.authUtil = authUtil;
+    }
 
 
     @Override
@@ -92,59 +106,7 @@ public class AuthServiceImpl implements AuthService {
         return new UserLoginResponse(accessToken, refreshTokenString);
     }
 
-    @Override
-    @Transactional
-    public UserLoginResponse handleOauth2LoinRequest(OAuth2User oAuth2User, String registrationId) {
-        Object emailVerifiedObj = oAuth2User.getAttribute("email_verified");
-        boolean verified = false;
-        if (emailVerifiedObj instanceof Boolean) {
-            verified = (Boolean) emailVerifiedObj;
-        } else if (emailVerifiedObj instanceof String) {
-            verified = Boolean.parseBoolean((String) emailVerifiedObj);
-        }
-        if (!verified) {
-            throw new BadCredentialsException("Email is not verified.");
-        }
 
-        AuthProvider authProvider = authUtil.getAuthProvider(registrationId);
-        String providerId = authUtil.getproviderId(oAuth2User, registrationId);
-
-        User user = userRepository.findByProviderUserIdAndProvider(providerId, authProvider).orElse(null);
-        String email = oAuth2User.getAttribute("email");
-        String name = oAuth2User.getAttribute("name");
-        String picture = oAuth2User.getAttribute("picture");
-        
-        User emailUser = userRepository.findByEmail(email).orElse(null);
-
-        if(user == null && emailUser != null){
-            emailUser.setProvider(authProvider);
-            emailUser.setProviderUserId(providerId);
-            user = emailUser;
-        }else if(user == null && emailUser == null){
-            user = new User();
-            user.setProvider(authProvider);
-            user.setProviderUserId(providerId);
-            user.setEmail(email);
-            user.setName(name);
-            user.setProfileImage(picture);
-            user.setPlatformRole(PlatformRole.Standard_Member);
-            user.setPassword(null);
-        }
-        user = userRepository.save(user);
-
-        if(!user.getIsActive()){
-            throw new BadCredentialsException("Your account is disabled.");
-        }
-
-        refreshTokenRepository.revokeAllByUserId(user.getId());
-        String accessToken = jwtService.generateAccessToken(user.getId(), user.getEmail());
-        String refreshTokenString = jwtService.generateRefreshToken(user.getEmail());
-        RefreshToken refreshToken = new RefreshToken(user, refreshTokenString, false);
-
-        refreshTokenRepository.save(refreshToken);
-
-        return new UserLoginResponse(accessToken, refreshTokenString);
-    }
 
     @Override
     public TokenResfreshResponse refreshToken(String refreshToken) {

@@ -10,7 +10,6 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.WorkspaceMembe
 import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.WorkspaceService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,10 +18,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/workspaces")
-@RequiredArgsConstructor
 public class WorkspaceController {
 
     private final WorkspaceService workspaceService;
+
+    public WorkspaceController(WorkspaceService workspaceService) {
+        this.workspaceService = workspaceService;
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<WorkspaceResponse>> createWorkspace(@Valid @RequestBody WorkspaceRequest workspaceRequest){

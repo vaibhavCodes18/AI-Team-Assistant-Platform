@@ -6,7 +6,6 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.DocumentViewRe
 import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.DocumentService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -18,10 +17,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/documents")
-@RequiredArgsConstructor
 public class DocumentController {
 
     private final DocumentService documentService;
+
+    public DocumentController(DocumentService documentService) {
+        this.documentService = documentService;
+    }
 
     @PostMapping(
             value = "/upload",

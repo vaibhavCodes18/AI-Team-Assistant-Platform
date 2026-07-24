@@ -1,7 +1,6 @@
 package com.ai_powered_app.ai_team_assistant_platform.security;
 
 import com.ai_powered_app.ai_team_assistant_platform.security.oauth2.Oauth2SuccessHandler;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -22,7 +21,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 @Slf4j
 public class SecurityConfig {
 
@@ -30,12 +28,19 @@ public class SecurityConfig {
     private String failureRedirectUri;
 
     private final UserDetailsService userDetailsService;
-
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final Oauth2SuccessHandler oauth2SuccessHandler;
 
+    public SecurityConfig(UserDetailsService userDetailsService,
+                          JwtAuthenticationFilter jwtAuthenticationFilter,
+                          Oauth2SuccessHandler oauth2SuccessHandler) {
+        this.userDetailsService = userDetailsService;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.oauth2SuccessHandler = oauth2SuccessHandler;
+    }
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, AuthenticationProvider authenticationProvider) throws Exception {
         return httpSecurity
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
@@ -48,6 +53,7 @@ public class SecurityConfig {
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+
                 .oauth2Login(oauth2 -> oauth2
                         .failureHandler(
                                 (request, response, exception) -> {
@@ -58,6 +64,7 @@ public class SecurityConfig {
                         )
                         .successHandler(oauth2SuccessHandler)
                 )
+                .authenticationProvider(authenticationProvider)
 
                 .build();
     }

@@ -4,14 +4,16 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.request.ActivityLogRequ
 import com.ai_powered_app.ai_team_assistant_platform.entity.ActivityLog;
 import com.ai_powered_app.ai_team_assistant_platform.repository.ActivityLogRepository;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.ActivityLogService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 public class ActivityLogServiceImpl implements ActivityLogService {
 
     private final ActivityLogRepository activityLogRepository;
+
+    public ActivityLogServiceImpl(ActivityLogRepository activityLogRepository) {
+        this.activityLogRepository = activityLogRepository;
+    }
 
     @Override
     public void logActivity(ActivityLogRequest request) {

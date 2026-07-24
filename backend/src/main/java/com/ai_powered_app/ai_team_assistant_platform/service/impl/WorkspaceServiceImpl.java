@@ -15,7 +15,6 @@ import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.WorkspaceR
 import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.WorkspaceService;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class WorkspaceServiceImpl implements WorkspaceService {
 
     private final UserRepository userRepository;
@@ -43,6 +41,28 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     private final TaskRepository taskRepository;
     private final AIRequestRepository aiRequestRepository;
     private final DocumentRepository documentRepository;
+
+    public WorkspaceServiceImpl(UserRepository userRepository,
+                                WorkspaceRepository workspaceRepository,
+                                WorkspaceMemberRepository workspaceMemberRepository,
+                                WorkspaceRedisService redisService,
+                                ActivityLogRepository activityLogRepository,
+                                NotificationRepository notificationRepository,
+                                ProjectRepository projectRepository,
+                                TaskRepository taskRepository,
+                                AIRequestRepository aiRequestRepository,
+                                DocumentRepository documentRepository) {
+        this.userRepository = userRepository;
+        this.workspaceRepository = workspaceRepository;
+        this.workspaceMemberRepository = workspaceMemberRepository;
+        this.redisService = redisService;
+        this.activityLogRepository = activityLogRepository;
+        this.notificationRepository = notificationRepository;
+        this.projectRepository = projectRepository;
+        this.taskRepository = taskRepository;
+        this.aiRequestRepository = aiRequestRepository;
+        this.documentRepository = documentRepository;
+    }
 
     @Override
     public WorkspaceResponse createWorkspace(WorkspaceRequest workspaceRequest) {
@@ -184,7 +204,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         List<Project> projects = projectRepository.findByWorkspaceIdOrderByUpdatedAtDesc(workspaceId);
         List<AIRequest> aiRequests = aiRequestRepository.findByWorkspaceId(workspaceId);
         List<Document> documents = documentRepository.findByWorkspaceId(workspaceId);
-        List<Task> tasks = taskRepository.findByWorkspaceId(workspaceId);
+        List<Task> tasks = taskRepository.findByProjectWorkspaceId(workspaceId);
         List<ActivityLog> activityLogs = activityLogRepository.findByWorkspaceId(workspaceId);
 
         workspaceMemberRepository.deleteAll(members);

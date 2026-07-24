@@ -8,18 +8,21 @@ import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundE
 import com.ai_powered_app.ai_team_assistant_platform.repository.NotificationRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.UserRepository;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.NotificationService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+
+    public NotificationServiceImpl(NotificationRepository notificationRepository, UserRepository userRepository) {
+        this.notificationRepository = notificationRepository;
+        this.userRepository = userRepository;
+    }
 
     @Override
     public List<NotificationResponse> getNotifications() {

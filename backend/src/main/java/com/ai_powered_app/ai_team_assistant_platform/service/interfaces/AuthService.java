@@ -14,7 +14,7 @@ public interface AuthService {
     
     UserLoginResponse userLogin(LoginRequest loginRequest);
     
-    UserLoginResponse handleOauth2LoinRequest(OAuth2User oAuth2User, String registrationId);
+
     
     TokenResfreshResponse refreshToken(String refreshToken);
     
