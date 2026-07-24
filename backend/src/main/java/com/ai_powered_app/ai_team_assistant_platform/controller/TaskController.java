@@ -27,8 +27,6 @@ public class TaskController {
         return ResponseEntity.status(HttpStatus.CREATED).body(apiRes);
     }
 
-    
-
     @GetMapping("/{taskId}")
     public ResponseEntity<ApiResponse<TaskResponse>> getTaskById(@PathVariable("taskId") Long taskId) {
         TaskResponse response = taskService.getTaskById(taskId);
