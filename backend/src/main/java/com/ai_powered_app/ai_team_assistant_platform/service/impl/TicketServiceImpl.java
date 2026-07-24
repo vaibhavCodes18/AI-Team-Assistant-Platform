@@ -8,7 +8,6 @@ import com.ai_powered_app.ai_team_assistant_platform.entity.*;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
 import com.ai_powered_app.ai_team_assistant_platform.enums.NotificationType;
 import com.ai_powered_app.ai_team_assistant_platform.enums.ProjectRole;
-import com.ai_powered_app.ai_team_assistant_platform.enums.TicketStatus;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.kafka.event.TicketCreatedEvent;
@@ -107,29 +106,6 @@ public class TicketServiceImpl implements TicketService {
                 .publishTicketCreatedEvent(event);
 
         return mapToTicketResponse(savedTicket);
-    }
-
-    @Override
-    public List<TicketResponse> getProjectTickets(Long projectId) {
-        User currentUser = getAuthenticateUser();
-
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-
-        WorkspaceMember member = workspaceMemberRepository
-                .findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
-                .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
-
-        if (!isAuthenticatedMember(member, currentUser, project)) {
-            throw new BadCredentialsException("You do not have permission to get this ticket");
-        }
-
-        List<TicketResponse> tickets = ticketRepository
-                .findByProjectIdAndStatusNotOrderByUpdatedAtDesc(projectId, TicketStatus.CLOSED).stream()
-                .map(this::mapToTicketResponse).toList();
-
-        return tickets;
-
     }
 
     @Override

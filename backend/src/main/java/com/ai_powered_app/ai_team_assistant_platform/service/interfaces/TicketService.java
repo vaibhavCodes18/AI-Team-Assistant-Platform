@@ -9,7 +9,6 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse
 
 public interface TicketService {
     TicketResponse createTicket(TicketRequest ticketRequest);
-    List<TicketResponse> getProjectTickets(Long projectId);
     TicketResponse getTicketById(Long ticketId);
     TicketResponse updateTicket(Long ticketId, TicketUpdateRequest ticketUpdateRequest);
     void deleteTicket(Long ticketId);

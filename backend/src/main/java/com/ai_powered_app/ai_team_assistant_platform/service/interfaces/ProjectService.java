@@ -22,4 +22,5 @@ public interface ProjectService {
      void deleteProject(Long projectId);
      List<TaskResponse> getProjectTasks(Long projectId);
      List<TicketResponse> getProjectTickets(Long projectId);
+     
 }

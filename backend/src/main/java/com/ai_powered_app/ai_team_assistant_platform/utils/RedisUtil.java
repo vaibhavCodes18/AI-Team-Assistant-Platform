@@ -23,6 +23,10 @@ public class RedisUtil {
         return "task-" + id;
     }
 
+    public static String getTicketsKey(Long id){
+        return "tickets-" + id;
+    }
+
     public static String getBlacklistKey(String type, String token){
         return "blacklist-"+ type + "-" + token;
     }
