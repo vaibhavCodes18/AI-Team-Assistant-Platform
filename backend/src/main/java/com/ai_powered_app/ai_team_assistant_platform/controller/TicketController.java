@@ -51,10 +51,11 @@ public class TicketController {
         ApiResponse<Void> apiRes = new ApiResponse<>(200, "Ticket deleted", null);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
+
     @GetMapping("/{ticketId}/tasks")
     public ResponseEntity<ApiResponse<List<TaskResponse>>> getTicketTasks(@PathVariable("ticketId") Long ticketId){
         List<TaskResponse> response =  ticketService.getTicketTasks(ticketId);
-        ApiResponse<List<TaskResponse>> apiRes = new ApiResponse<>(200, "Ticket deleted", response);
+        ApiResponse<List<TaskResponse>> apiRes = new ApiResponse<>(200, "Ticket tasks fetched", response);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 

@@ -73,17 +73,14 @@ public class TicketServiceImpl implements TicketService {
 
         Project project = projectRepository.findById(ticketRequest.getProjectId())
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-
-        Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
-
+        
         WorkspaceMember member = workspaceMemberRepository
-                .findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
+                .findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
         ProjectMember projectMember = projectMemberRepository
                 .findByProjectIdAndUserId(project.getId(), currentUser.getId())
-                .orElseThrow(() -> new BadCredentialsException("You are not a member of this project"));
+                .orElse(null);
 
         if (!isAuthenticated(member, currentUser, project, projectMember)) {
             throw new BadCredentialsException(
@@ -110,7 +107,7 @@ public class TicketServiceImpl implements TicketService {
         activityLog.setEntityId(savedTicket.getId());
         activityLog.setMetadata(currentUser.getName() + " created ticket '" + savedTicket.getTitle() + "'");
         activityLogRepository.save(activityLog);
-
+        System.out.println("Break");
         TicketCreatedEvent event = TicketCreatedEvent.builder()
                 .ticketId(savedTicket.getId())
                 .title(savedTicket.getTitle())
@@ -170,10 +167,10 @@ public class TicketServiceImpl implements TicketService {
 
         ProjectMember projectMembers = projectMemberRepository.findByProjectIdAndUserId(project.getId(),
                 currentUser.getId())
-                .orElseThrow(() -> new BadCredentialsException("You are not a member of this project"));
+                .orElse(null);
 
         if (!isAuthenticated(member, currentUser, project, projectMembers)
-                || !currentUser.equals(ticket.getReporter())) {
+                && !currentUser.equals(ticket.getReporter())) {
             throw new BadCredentialsException("You do not have permission to update this ticket");
         }
 
@@ -312,7 +309,7 @@ public class TicketServiceImpl implements TicketService {
                 .status(task.getStatus())
                 .priority(task.getPriority())
                 .dueDate(task.getDueDate())
-                .projectId(task.getProject().getId())
+                .projectId(task.getProject() != null ? task.getProject().getId() : null)
                 .ticketId(task.getTicket() != null ? task.getTicket().getId() : null)
                 .assignedUserId(task.getAssignee() != null ? task.getAssignee().getId() : null)
                 .createdByUserId(task.getCreatedBy().getId())
@@ -352,6 +349,7 @@ public class TicketServiceImpl implements TicketService {
                 .description(ticket.getDescription())
                 .status(ticket.getStatus())
                 .priority(ticket.getPriority())
+                .type(ticket.getType())
                 .reporterId(ticket.getReporter().getId())
                 .dueDate(ticket.getDueDate())
                 .build();

@@ -77,7 +77,7 @@ public class TaskServiceImpl implements TaskService {
                 task.setDueDate(taskRequest.getDueDate());
                 task.setCreatedBy(currentUser);
 
-                if (taskRequest.getTicketId() != null && !(taskRequest.getTicketId() > 0L)) {
+                if (taskRequest.getTicketId() != null && (taskRequest.getTicketId() > 0L)) {
                         Ticket ticket = ticketRepository.findById(taskRequest.getTicketId())
                                         .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
                         task.setTicket(ticket);
@@ -87,7 +87,7 @@ public class TaskServiceImpl implements TaskService {
                         task.setProject(project);
                 }
 
-                if (taskRequest.getAssigneeId() != null && !(taskRequest.getAssigneeId() > 0L)) {
+                if (taskRequest.getAssigneeId() != null && (taskRequest.getAssigneeId() > 0L)) {
                         User assignee = userRepository.findById(taskRequest.getAssigneeId())
                                         .orElseThrow(() -> new ResourceNotFoundException("User not found"));
                         task.setAssignee(assignee);
@@ -95,8 +95,8 @@ public class TaskServiceImpl implements TaskService {
                         task.setAssignee(null);
                 }
 
-                taskRepository.save(task);
-                return getTaskResponse(task);
+                Task savedTask = taskRepository.save(task);
+                return getTaskResponse(savedTask);
         }
 
         @Override
@@ -281,7 +281,7 @@ public class TaskServiceImpl implements TaskService {
                                 .status(task.getStatus())
                                 .priority(task.getPriority())
                                 .dueDate(task.getDueDate())
-                                .projectId(task.getProject().getId())
+                                .projectId(task.getProject() != null ? task.getProject().getId() : null)
                                 .ticketId(task.getTicket() != null ? task.getTicket().getId() : null)
                                 .assignedUserId(task.getAssignee() != null ? task.getAssignee().getId() : null)
                                 .createdByUserId(task.getCreatedBy().getId())

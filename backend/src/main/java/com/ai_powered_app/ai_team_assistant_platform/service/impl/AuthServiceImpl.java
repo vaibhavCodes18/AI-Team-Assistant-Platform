@@ -44,7 +44,6 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRedisService redisService;
     private final JwtBlacklistService jwtBlacklistService;
-    private final AuthUtil authUtil;
 
     public AuthServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
@@ -61,7 +60,6 @@ public class AuthServiceImpl implements AuthService {
         this.refreshTokenRepository = refreshTokenRepository;
         this.redisService = redisService;
         this.jwtBlacklistService = jwtBlacklistService;
-        this.authUtil = authUtil;
     }
 
 
