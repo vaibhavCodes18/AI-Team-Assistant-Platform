@@ -23,6 +23,6 @@ public class TicketResponse {
     private TicketType type;
     private TicketStatus status;
     private TicketPriority priority;
-    private Long reporterId;
+    private UserSummaryResponse reporter;
     private LocalDate dueDate;
 }

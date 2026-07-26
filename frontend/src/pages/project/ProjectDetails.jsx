@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { fetchUserProfile } from '../../api/authApi';
-import { getProjectById, getProjectMembers, getProjectTasks } from '../../api/projectApi';
+import { getProjectById, getProjectMembers, getProjectTasks, getProjectTickets } from '../../api/projectApi';
 import { getAllWorkspaceMembers } from '../../api/workspaceApi';
 import Sidebar from '../../components/layout/Sidebar';
 import InviteProjectMemberModal from '../../components/project/InviteProjectMemberModal';
 import ManageProjectMemberModal from '../../components/project/ManageProjectMemberModal';
 import EditProjectModal from '../../components/project/EditProjectModal';
 import DeleteProjectModal from '../../components/project/DeleteProjectModal';
+import PriorityTicketsModal from '../../components/project/PriorityTicketsModal';
 
 const MOCK_TICKETS = [
   {
@@ -46,11 +47,13 @@ const ProjectDetails = () => {
   const [members, setMembers] = useState([]);
   const [workspaceMembers, setWorkspaceMembers] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isTicketsModalOpen, setIsTicketsModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
 
   const loadData = async () => {
@@ -99,6 +102,16 @@ const ProjectDetails = () => {
         }
       } catch (err) {
         console.error('Failed to load project tasks:', err);
+      }
+
+      // 5. Fetch project tickets
+      try {
+        const ticketsRes = await getProjectTickets(projectId);
+        if (ticketsRes?.data) {
+          setTickets(ticketsRes.data);
+        }
+      } catch (err) {
+        console.error('Failed to load project tickets:', err);
       }
 
     } catch (error) {
@@ -182,16 +195,42 @@ const ProjectDetails = () => {
   };
 
   const getPriorityBadgeClass = (priority) => {
-    const p = priority?.toUpperCase();
-    if (p === 'CRITICAL') return 'bg-error-container/20 text-error';
-    if (p === 'HIGH') return 'bg-tertiary-container/20 text-tertiary';
-    if (p === 'MEDIUM') return 'bg-secondary-container/20 text-secondary';
-    return 'bg-surface-variant text-on-surface-variant';
+    switch (priority?.toUpperCase()) {
+      case 'CRITICAL':
+        return 'bg-red-500/10 text-red-400 border border-red-500/30';
+      case 'HIGH':
+        return 'bg-amber-500/10 text-amber-400 border border-amber-500/30';
+      case 'MEDIUM':
+        return 'bg-blue-500/10 text-blue-400 border border-blue-500/30';
+      case 'LOW':
+        return 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/30';
+      default:
+        return 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/30';
+    }
+  };
+  const getTicketStatusBadgeClass = (status) => {
+    switch (status?.toUpperCase()) {
+      case 'OPEN':
+        return 'bg-red-500/10 text-red-400 border border-red-500/30';
+      case 'IN_PROGRESS':
+        return 'bg-amber-500/10 text-amber-400 border border-amber-500/30';
+      case 'RESOLVED':
+        return 'bg-blue-500/10 text-blue-400 border border-blue-500/30';
+      case 'CLOSED':
+        return 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/30';
+      default:
+        return 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/30';
+    }
   };
 
   const formatPriority = (priority) => {
     if (!priority) return 'Medium';
     return priority.charAt(0).toUpperCase() + priority.slice(1).toLowerCase();
+  };
+
+  const formatStatus = (status) => {
+    if (!status) return 'Open';
+    return status.replace('_', ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
   };
 
   const progressInfo = getProjectProgressInfo();
@@ -217,14 +256,29 @@ const ProjectDetails = () => {
 
   // Determine lists to render
   const renderedMembers = members;
-  const renderedTasks = tasks.length > 0 ? tasks.map(t => ({
+  const renderedTasks = tickets.length > 0 ? tickets.map(t => ({
     id: t.id,
     title: t.title,
+    description: t.description,
     priority: t.priority || 'MEDIUM',
+    type: t.type || 'FEATURE',
+    status: t.status || 'OPEN',
+    dueDate: t.dueDate,
+    reporter: t.reporter,
+    assignedUserName: t.reporter?.name || null,
+    assignedUserProfileImage: t.reporter?.profileImage || null,
+    code: `#TCK-${t.id}`
+  })) : (tasks.length > 0 ? tasks.map(t => ({
+    id: t.id,
+    title: t.title,
+    description: t.description,
+    priority: t.priority || 'MEDIUM',
+    type: t.type || 'TASK',
+    status: t.status || 'OPEN',
     assignedUserName: t.assignedUserName,
     assignedUserProfileImage: null,
     code: `#TSK-${t.id}`
-  })) : MOCK_TICKETS;
+  })) : MOCK_TICKETS);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-on-background font-body-md">
@@ -466,7 +520,7 @@ const ProjectDetails = () => {
                 </div>
               </div>
               <button 
-                onClick={() => toast(`Total members: ${renderedMembers.length}`)}
+                onClick={() => navigate(`/workspaces/${id}/projects/${projectId}/members`)}
                 className="mt-6 w-full py-2 border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer bg-transparent"
               >
                 View All {renderedMembers.length} Members
@@ -485,7 +539,13 @@ const ProjectDetails = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-on-surface-variant">Sorted by Severity</span>
-                  <span className="material-symbols-outlined text-lg text-on-surface-variant cursor-pointer" onClick={() => toast('Filters (mock)')}>filter_list</span>
+                  <span 
+                    className="material-symbols-outlined text-lg text-on-surface-variant cursor-pointer hover:text-on-surface transition-colors" 
+                    onClick={() => setIsTicketsModalOpen(true)}
+                    title="View & Filter All Tickets"
+                  >
+                    filter_list
+                  </span>
                 </div>
               </div>
               <div className="flex-1 overflow-x-auto">
@@ -494,16 +554,26 @@ const ProjectDetails = () => {
                     <tr>
                       <th className="px-lg py-3 font-medium">Issue</th>
                       <th className="px-lg py-3 font-medium">Status</th>
+                      <th className="px-lg py-3 font-medium">Priority</th>
                       <th className="px-lg py-3 font-medium text-right">Assignee</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant">
                     {renderedTasks.slice(0, 3).map((ticket, index) => {
                       return (
-                        <tr key={ticket.id || index} className="hover:bg-surface-container-high transition-colors">
+                        <tr 
+                          key={ticket.id || index} 
+                          className="hover:bg-surface-container-high transition-colors cursor-pointer"
+                          onClick={() => setIsTicketsModalOpen(true)}
+                        >
                           <td className="px-lg py-4">
                             <p className="text-sm text-on-surface font-medium line-clamp-1">{ticket.title}</p>
                             <p className="text-[11px] text-on-surface-variant font-label-sm">{ticket.code}</p>
+                          </td>
+                          <td className="px-lg py-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTicketStatusBadgeClass(ticket.status)}`}>
+                              {formatStatus(ticket.status)}
+                            </span>
                           </td>
                           <td className="px-lg py-4">
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getPriorityBadgeClass(ticket.priority)}`}>
@@ -530,8 +600,11 @@ const ProjectDetails = () => {
                 </table>
               </div>
               <div className="p-4 bg-surface-container-lowest text-center">
-                <button className="text-primary text-sm font-medium hover:underline cursor-pointer bg-transparent border-none outline-none" onClick={() => toast('CRM Backlog navigation (mock)')}>
-                  View CRM Backlog ({renderedTasks.length > 3 ? renderedTasks.length - 3 : 14} more)
+                <button 
+                  className="text-primary text-sm font-medium hover:underline cursor-pointer bg-transparent border-none outline-none" 
+                  onClick={() => setIsTicketsModalOpen(true)}
+                >
+                  View All Priority Tickets ({renderedTasks.length})
                 </button>
               </div>
             </div>
@@ -676,6 +749,15 @@ const ProjectDetails = () => {
         projectId={projectId}
         projectName={project?.name}
         workspaceId={id}
+      />
+
+      {/* Priority Tickets Modal */}
+      <PriorityTicketsModal
+        isOpen={isTicketsModalOpen}
+        onClose={() => setIsTicketsModalOpen(false)}
+        projectId={projectId}
+        projectName={project?.name}
+        tickets={tickets}
       />
     </div>
   );

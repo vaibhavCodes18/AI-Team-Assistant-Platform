@@ -8,6 +8,7 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectRespons
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TaskResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserSummaryResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Project;
 import com.ai_powered_app.ai_team_assistant_platform.entity.ProjectMember;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Task;
@@ -642,7 +643,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .priority(ticket.getPriority())
                 .dueDate(ticket.getDueDate())
                 .projectId(ticket.getProject().getId())
-                .reporterId(ticket.getReporter() != null ? ticket.getReporter().getId() : null)
+                .reporter(ticket.getReporter() != null ? getUserSummaryResponse(ticket.getReporter()) : null)
                 .build();
     }
 
@@ -695,6 +696,15 @@ public class ProjectServiceImpl implements ProjectService {
                 .isActive(user.getIsActive())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
+                .build();
+    }
+    private UserSummaryResponse getUserSummaryResponse(User user) {
+        if (user == null)
+            return null;
+        return UserSummaryResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .profileImage(user.getProfileImage())
                 .build();
     }
 

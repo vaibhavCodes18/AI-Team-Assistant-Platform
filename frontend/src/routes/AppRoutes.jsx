@@ -12,6 +12,8 @@ import WorkspaceMembers from "../pages/workspace/WorkspaceMembers.jsx";
 import ProjectList from "../pages/project/ProjectList.jsx";
 import ProjectDetails from "../pages/project/ProjectDetails.jsx";
 
+import ProjectMembers from "../pages/project/ProjectMembers.jsx";
+
 const AppRoutes = () => {
   return (
     <BrowserRouter>
@@ -66,6 +68,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <ProjectDetails />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/workspaces/:id/projects/:projectId/members" 
+          element={
+            <ProtectedRoute>
+              <ProjectMembers />
             </ProtectedRoute>
           } 
         />

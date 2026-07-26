@@ -37,6 +37,7 @@ const WorkspaceMembers = () => {
       // Fetch workspace and members
       const workspaceRes = await getWorkspaceById(id);
       const membersRes = await getAllWorkspaceMembers(id);
+      
 
       if (workspaceRes?.data) {
         setWorkspace(workspaceRes.data);

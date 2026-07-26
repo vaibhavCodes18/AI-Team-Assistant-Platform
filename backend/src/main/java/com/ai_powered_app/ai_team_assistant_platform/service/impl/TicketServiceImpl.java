@@ -315,25 +315,16 @@ public class TicketServiceImpl implements TicketService {
 
     private boolean isAuthenticated(WorkspaceMember workspaceMember, User currentUser, Project project,
             ProjectMember projectMember) {
-        if (workspaceMember.getRole() == WorkspaceRole.OWNER || workspaceMember.getRole() == WorkspaceRole.ADMIN) {
+        if (workspaceMember.getRole() == WorkspaceRole.OWNER || workspaceMember.getRole() == WorkspaceRole.ADMIN || projectMember.getRole() == ProjectRole.PROJECT_ADMIN) {
             return true;
-        } else {
-            if (projectMember.getRole() == ProjectRole.PROJECT_ADMIN) {
-                return true;
-            }
         }
         return false;
     }
 
     private boolean isAuthenticatedMember(WorkspaceMember workspaceMember, User currentUser, Project project) {
-        if (workspaceMember.getRole() == WorkspaceRole.OWNER || workspaceMember.getRole() == WorkspaceRole.ADMIN) {
+        if (workspaceMember.getRole() == WorkspaceRole.OWNER || workspaceMember.getRole() == WorkspaceRole.ADMIN || projectMemberRepository.existsByProjectIdAndUserId(project.getId(),
+                    currentUser.getId())) {
             return true;
-        } else {
-            boolean isProjectMember = projectMemberRepository.existsByProjectIdAndUserId(project.getId(),
-                    currentUser.getId());
-            if (isProjectMember) {
-                return true;
-            }
         }
         return false;
     }
@@ -347,7 +338,7 @@ public class TicketServiceImpl implements TicketService {
                 .status(ticket.getStatus())
                 .priority(ticket.getPriority())
                 .type(ticket.getType())
-                .reporterId(ticket.getReporter().getId())
+                .reporterId(ticket.getReporter() != null ? ticket.getReporter().getId() : null)
                 .dueDate(ticket.getDueDate())
                 .build();
     }

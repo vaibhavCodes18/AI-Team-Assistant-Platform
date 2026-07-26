@@ -48,3 +48,8 @@ export const updateProjectMemberRole = async (projectId, userId, roleData) => {
     const response = await api.patch(`/v1/projects/${projectId}/member/${userId}/role`, roleData);
     return response.data;
 };
+
+export const getProjectTickets = async (projectId) => {
+    const response = await api.get(`/v1/projects/${projectId}/tickets`);
+    return response.data;
+};
