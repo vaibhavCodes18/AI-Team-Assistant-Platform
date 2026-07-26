@@ -200,7 +200,13 @@ public class TaskServiceImpl implements TaskService {
                 Task task = taskRepository.findById(taskId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
 
-                Project project = task.getProject();
+                Project project = null;
+
+                if (task.getProject() != null) {
+                        project = task.getProject();
+                } else {
+                        project = task.getTicket().getProject();
+                }
 
                 WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(
                                 project.getWorkspace().getId(), currentUser.getId())
@@ -209,7 +215,7 @@ public class TaskServiceImpl implements TaskService {
                 ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(project.getId(),
                                 currentUser.getId()).orElse(null);
 
-                if (!isAuthenticated(member, currentUser, project, projectMember)) {
+                if (!isAuthenticated(member, currentUser, project, projectMember) && !currentUser.equals(task.getCreatedBy())) {
                         throw new AccessDeniedException("You are not authorized to access this task");
                 }
 

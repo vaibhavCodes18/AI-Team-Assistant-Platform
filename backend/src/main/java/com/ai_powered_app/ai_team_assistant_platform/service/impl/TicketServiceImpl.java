@@ -234,16 +234,13 @@ public class TicketServiceImpl implements TicketService {
         Project project = projectRepository.findById(ticket.getProject().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        Workspace workspace = workspaceRepository.findById(project.getWorkspace().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found with this workspaceId."));
-
         WorkspaceMember workspaceMember = workspaceMemberRepository
-                .findByWorkspaceIdAndUserId(workspace.getId(), currentUser.getId())
+                .findByWorkspaceIdAndUserId(project.getWorkspace().getId(), currentUser.getId())
                 .orElseThrow(() -> new BadCredentialsException("You are not a member of this workspace"));
 
         ProjectMember projectMember = projectMemberRepository
                 .findByProjectIdAndUserId(project.getId(), currentUser.getId())
-                .orElseThrow(() -> new BadCredentialsException("You are not a member of this project"));
+                .orElse(null);
 
         if (!isAuthenticated(workspaceMember, currentUser, project, projectMember)) {
             throw new BadCredentialsException("You do not have permission to delete this ticket");
