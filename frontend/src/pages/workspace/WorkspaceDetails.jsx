@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { fetchUserProfile, logoutUser } from '../../api/authApi';
+import { fetchUserProfile } from '../../api/authApi';
 import { getWorkspaceById, getAllWorkspaceMembers } from '../../api/workspaceApi';
 import { getWorkspaceProjects } from '../../api/projectApi';
 import Sidebar from '../../components/layout/Sidebar';
@@ -15,6 +15,7 @@ import QuickControls from '../../components/workspace/QuickControls';
 import MemberManagement from '../../components/workspace/MemberManagement';
 import EditWorkspace from '../../components/workspace/EditWorkspace';
 import RecentProjects from '../../components/workspace/RecentProjects';
+import LogoutModal from '../../components/common/LogoutModal';
 
 const WorkspaceDetails = () => {
   const { id } = useParams();
@@ -28,6 +29,8 @@ const WorkspaceDetails = () => {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
   const [isViewLogsModalOpen, setIsViewLogsModalOpen] = useState(false);
+  // const [isEditWorkspaceModalOpen, setIsEditWorkspaceModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [activityTrigger, setActivityTrigger] = useState(0);
 
   const loadData = async () => {
@@ -82,17 +85,7 @@ const WorkspaceDetails = () => {
     init();
   }, [id, navigate]);
 
-  const handleLogout = async () => {
-    try {
-      const logoutRes = await logoutUser();
-      toast.success(logoutRes?.msg || 'Logged out successfully');
-    } catch (error) {
-      console.error('Logout API failed:', error);
-    } finally {
-      localStorage.removeItem('accessToken');
-      navigate('/login');
-    }
-  };
+  
 
   const handleOpenCreateProjectModal = () => {
     if (isOwnerOrAdmin) {
@@ -146,8 +139,8 @@ const WorkspaceDetails = () => {
           </div>
           <div className="flex items-center gap-md">
             <button 
-              onClick={handleLogout}
-              className="md:hidden flex items-center justify-center p-2 text-on-surface-variant hover:text-on-surface rounded-full transition-colors"
+              onClick={() => setIsLogoutModalOpen(true)}
+              className="md:hidden flex items-center justify-center p-2 text-on-surface-variant hover:text-on-surface rounded-full transition-colors cursor-pointer bg-transparent border-none"
               title="Sign Out"
             >
               <span className="material-symbols-outlined">logout</span>
@@ -282,6 +275,11 @@ const WorkspaceDetails = () => {
         onClose={() => setIsViewLogsModalOpen(false)}
         workspaceId={id}
         workspaceMembers={workspaceMembers}
+      />
+
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
       />
     </div>
   );

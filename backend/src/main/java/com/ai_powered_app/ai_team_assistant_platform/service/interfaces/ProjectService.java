@@ -6,7 +6,7 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateProjectRe
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectMemberResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TaskResponse;
-import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketSummaryResponse;
 
 import java.util.List;
 
@@ -21,6 +21,6 @@ public interface ProjectService {
      ProjectResponse updateProject(Long projectId, UpdateProjectRequest updateProjectRequest);
      void deleteProject(Long projectId);
      List<TaskResponse> getProjectTasks(Long projectId);
-     List<TicketResponse> getProjectTickets(Long projectId);
+     List<TicketSummaryResponse> getProjectTickets(Long projectId);
      
 }

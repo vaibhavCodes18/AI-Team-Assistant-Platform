@@ -7,7 +7,7 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateProjectRe
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectMemberResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TaskResponse;
-import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketSummaryResponse;
 import com.ai_powered_app.ai_team_assistant_platform.response.ApiResponse;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.ProjectService;
 
@@ -108,10 +108,10 @@ public class ProjectController {
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
     @GetMapping("/{projectId}/tickets")
-    public ResponseEntity<ApiResponse<List<TicketResponse>>> getRecentProjectTickets(
+    public ResponseEntity<ApiResponse<List<TicketSummaryResponse>>> getRecentProjectTickets(
             @PathVariable("projectId") Long projectId) {
-        List<TicketResponse> tickets = projectService.getProjectTickets(projectId);
-        ApiResponse<List<TicketResponse>> apiRes = new ApiResponse<>(200, "Project tickets fetched successfully", tickets);
+        List<TicketSummaryResponse> tickets = projectService.getProjectTickets(projectId);
+        ApiResponse<List<TicketSummaryResponse>> apiRes = new ApiResponse<>(200, "Project tickets fetched successfully", tickets);
         return ResponseEntity.status(HttpStatus.OK).body(apiRes);
     }
 

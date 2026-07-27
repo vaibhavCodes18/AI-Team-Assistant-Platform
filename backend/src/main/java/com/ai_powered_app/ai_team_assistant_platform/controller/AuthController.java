@@ -53,16 +53,16 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<TokenResfreshResponse>> login(@CookieValue(value = REFRESH_COOKIE_NAME, required = false) String refreshToken,
-                                                                    HttpServletResponse response){
+    public ResponseEntity<ApiResponse<TokenResfreshResponse>> refresh(@CookieValue(value = REFRESH_COOKIE_NAME, required = false) String refreshToken,
+                                                                      HttpServletResponse response){
         if (refreshToken == null || refreshToken.trim().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ApiResponse<>(400, "Refresh Token is missing in cookies", null));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ApiResponse<>(401, "Refresh Token is missing in cookies", null));
         }
         TokenResfreshResponse userResponse = authService.refreshToken(refreshToken);
 
         addRefreshCookie(response, userResponse.getRefreshtoken(), REFRESH_COOKIE_MAX_AGE);
-        ApiResponse<TokenResfreshResponse> res = new ApiResponse<>(201, "User successfully loggedIn", userResponse);
+        ApiResponse<TokenResfreshResponse> res = new ApiResponse<>(200, "Token refreshed successfully", userResponse);
 
         return ResponseEntity.status(HttpStatus.OK).body(res);
     }

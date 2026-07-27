@@ -3,7 +3,10 @@ package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.TicketUpdateRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TaskResponse;
-import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketDetailedResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketSummaryResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserSummaryResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.*;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
 import com.ai_powered_app.ai_team_assistant_platform.enums.NotificationType;
@@ -67,7 +70,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
-    public TicketResponse createTicket(TicketRequest ticketRequest) {
+    public TicketSummaryResponse createTicket(TicketRequest ticketRequest) {
 
         User currentUser = getAuthenticateUser();
 
@@ -122,11 +125,11 @@ public class TicketServiceImpl implements TicketService {
         ticketEventProducer
                 .publishTicketCreatedEvent(event);
 
-        return mapToTicketResponse(savedTicket);
+        return mapToSummaryTicketResponse(savedTicket);
     }
 
     @Override
-    public TicketResponse getTicketById(Long ticketId) {
+    public TicketDetailedResponse getTicketById(Long ticketId) {
         User currentUser = getAuthenticateUser();
 
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -143,12 +146,12 @@ public class TicketServiceImpl implements TicketService {
             throw new BadCredentialsException("You do not have permission to get this ticket");
         }
 
-        return mapToTicketResponse(ticket);
+        return mapToDetailedTicketResponse(ticket);
     }
 
     @Override
     @Transactional
-    public TicketResponse updateTicket(Long ticketId, TicketUpdateRequest ticketUpdateRequest) {
+    public TicketSummaryResponse updateTicket(Long ticketId, TicketUpdateRequest ticketUpdateRequest) {
 
         User currentUser = getAuthenticateUser();
 
@@ -220,7 +223,7 @@ public class TicketServiceImpl implements TicketService {
         }
         notificationRepository.saveAll(notifications);
 
-        return mapToTicketResponse(updatedTicket);
+        return mapToSummaryTicketResponse(updatedTicket);
     }
 
     @Override
@@ -315,7 +318,7 @@ public class TicketServiceImpl implements TicketService {
 
     private boolean isAuthenticated(WorkspaceMember workspaceMember, User currentUser, Project project,
             ProjectMember projectMember) {
-        if (workspaceMember.getRole() == WorkspaceRole.OWNER || workspaceMember.getRole() == WorkspaceRole.ADMIN || projectMember.getRole() == ProjectRole.PROJECT_ADMIN) {
+        if (workspaceMember.getRole() == WorkspaceRole.OWNER || workspaceMember.getRole() == WorkspaceRole.ADMIN || (projectMember != null && projectMember.getRole() == ProjectRole.PROJECT_ADMIN)) {
             return true;
         }
         return false;
@@ -329,8 +332,8 @@ public class TicketServiceImpl implements TicketService {
         return false;
     }
 
-    private TicketResponse mapToTicketResponse(Ticket ticket) {
-        return TicketResponse.builder()
+    private TicketSummaryResponse mapToSummaryTicketResponse(Ticket ticket) {
+        return TicketSummaryResponse.builder()
                 .id(ticket.getId())
                 .projectId(ticket.getProject().getId())
                 .title(ticket.getTitle())
@@ -338,8 +341,47 @@ public class TicketServiceImpl implements TicketService {
                 .status(ticket.getStatus())
                 .priority(ticket.getPriority())
                 .type(ticket.getType())
-                .reporterId(ticket.getReporter() != null ? ticket.getReporter().getId() : null)
+                .reporterDetails(ticket.getReporter() != null ? getUserSummaryResponse(ticket.getReporter()) : null)
                 .dueDate(ticket.getDueDate())
+                .build();
+    }
+    private TicketDetailedResponse mapToDetailedTicketResponse(Ticket ticket) {
+        return TicketDetailedResponse.builder()
+                .id(ticket.getId())
+                .projectId(ticket.getProject().getId())
+                .title(ticket.getTitle())
+                .description(ticket.getDescription())
+                .status(ticket.getStatus())
+                .priority(ticket.getPriority())
+                .type(ticket.getType())
+                .reporterDetails(ticket.getReporter() != null ? getUserResponse(ticket.getReporter()) : null)
+                .dueDate(ticket.getDueDate())
+                .build();
+    }
+
+    private UserResponse getUserResponse(User user) {
+        if (user == null)
+            return null;
+        return UserResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .provider(user.getProvider())
+                .profileImage(user.getProfileImage())
+                .platformRole(user.getPlatformRole())
+                .designation(user.getDesignation())
+                .isActive(user.getIsActive())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
+    }
+    private UserSummaryResponse getUserSummaryResponse(User user) {
+        if (user == null)
+            return null;
+        return UserSummaryResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .profileImage(user.getProfileImage())
                 .build();
     }
 

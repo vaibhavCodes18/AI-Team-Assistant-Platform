@@ -1,10 +1,18 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import TicketActionMenu from './TicketActionMenu';
+import TicketPreviewModal from './TicketPreviewModal';
+import EditTicketModal from './EditTicketModal';
+import DeleteTicketModal from './DeleteTicketModal';
 
-const PriorityTicketsModal = ({ isOpen, onClose, projectId, projectName, tickets = [] }) => {
+const PriorityTicketsModal = ({ isOpen, onClose, projectId, projectName, tickets = [], canManageTickets = false, onSuccess }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+
+  const [selectedTicketForPreview, setSelectedTicketForPreview] = useState(null);
+  const [selectedTicketForEdit, setSelectedTicketForEdit] = useState(null);
+  const [selectedTicketForDelete, setSelectedTicketForDelete] = useState(null);
 
   if (!isOpen) return null;
 
@@ -25,32 +33,33 @@ const PriorityTicketsModal = ({ isOpen, onClose, projectId, projectName, tickets
 
   const getTypeBadgeClass = (type) => {
     switch (type?.toUpperCase()) {
-      case 'FEATURE':
-        return 'bg-purple-500/10 text-purple-400 border border-purple-500/20';
       case 'BUG':
-        return 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
-      case 'TASK':
-        return 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20';
+        return 'bg-pink-500/10 text-pink-400 border border-pink-500/30';
+      case 'FEATURE':
+        return 'bg-violet-500/10 text-violet-400 border border-violet-500/30';
       case 'IMPROVEMENT':
-        return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+        return 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30';
+      case 'SUPPORT':
+        return 'bg-teal-500/10 text-teal-400 border border-teal-500/30';
+      case 'DOCUMENTATION':
+        return 'bg-lime-500/10 text-lime-400 border border-lime-500/30';
       default:
-        return 'bg-surface-container-high text-on-surface-variant border border-outline-variant';
+        return 'bg-slate-500/10 text-slate-400 border border-slate-500/30';
     }
   };
 
   const getStatusBadgeClass = (status) => {
     switch (status?.toUpperCase()) {
-      case 'IN_PROGRESS':
-        return 'bg-blue-500/15 text-blue-300 font-semibold';
       case 'OPEN':
-      case 'TODO':
-        return 'bg-amber-500/15 text-amber-300 font-semibold';
+        return 'bg-sky-500/10 text-sky-400 border border-sky-500/30';
+      case 'IN_PROGRESS':
+        return 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30';
       case 'RESOLVED':
+        return 'bg-green-500/10 text-green-400 border border-green-500/30';
       case 'CLOSED':
-      case 'DONE':
-        return 'bg-emerald-500/15 text-emerald-300 font-semibold';
+        return 'bg-gray-500/10 text-gray-400 border border-gray-500/30';
       default:
-        return 'bg-surface-container-high text-on-surface-variant font-semibold';
+        return 'bg-slate-500/10 text-slate-400 border border-slate-500/30';
     }
   };
 
@@ -61,7 +70,7 @@ const PriorityTicketsModal = ({ isOpen, onClose, projectId, projectName, tickets
 
   const formatStatus = (status) => {
     if (!status) return 'Open';
-    return status.replace('_', ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    return status.replace('_', ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
   const getInitials = (name) => {
@@ -114,7 +123,7 @@ const PriorityTicketsModal = ({ isOpen, onClose, projectId, projectName, tickets
           
           <button 
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"
+            className="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer bg-transparent border-none"
             title="Close modal"
           >
             <span className="material-symbols-outlined">close</span>
@@ -168,12 +177,13 @@ const PriorityTicketsModal = ({ isOpen, onClose, projectId, projectName, tickets
         </div>
 
         {/* Tickets List */}
-        <div className="flex-1 overflow-y-auto p-md space-y-md custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-md space-y-md custom-scrollbar text-left">
           {filteredTickets.length > 0 ? (
             filteredTickets.map((ticket) => (
               <div 
                 key={ticket.id} 
-                className="glass-card p-md rounded-xl border border-outline-variant/60 hover:border-primary/50 hover:bg-surface-container/60 transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-md group"
+                className="glass-card p-md rounded-xl border border-outline-variant/60 hover:border-primary/50 hover:bg-surface-container/60 transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-md group cursor-pointer"
+                onClick={() => setSelectedTicketForPreview(ticket)}
               >
                 <div className="space-y-1 min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -203,16 +213,16 @@ const PriorityTicketsModal = ({ isOpen, onClose, projectId, projectName, tickets
 
                 <div className="flex items-center gap-md shrink-0 self-end sm:self-center flex-wrap">
                   {/* Reporter Tag */}
-                  {ticket.reporter && (
-                    <div className="flex items-center gap-1.5 text-xs text-on-surface-variant bg-surface-container-low px-2.5 py-1 rounded-lg border border-outline-variant" title={`Reporter: ${ticket.reporter.name}`}>
+                  {(ticket.reporter || ticket.assignedUserName) && (
+                    <div className="flex items-center gap-1.5 text-xs text-on-surface-variant bg-surface-container-low px-2.5 py-1 rounded-lg border border-outline-variant" title={`Reporter: ${ticket.reporter?.name || ticket.assignedUserName}`}>
                       <div className="w-4 h-4 rounded-full overflow-hidden bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-[9px] shrink-0">
-                        {ticket.reporter.profileImage ? (
-                          <img src={ticket.reporter.profileImage} alt={ticket.reporter.name} className="w-full h-full object-cover" />
+                        {ticket.reporter?.profileImage || ticket.assignedUserProfileImage ? (
+                          <img src={ticket.reporter?.profileImage || ticket.assignedUserProfileImage} alt={ticket.reporter?.name || ticket.assignedUserName} className="w-full h-full object-cover" />
                         ) : (
-                          getInitials(ticket.reporter.name)
+                          getInitials(ticket.reporter?.name || ticket.assignedUserName)
                         )}
                       </div>
-                      <span className="truncate max-w-[110px] font-medium">{ticket.reporter.name}</span>
+                      <span className="truncate max-w-[110px] font-medium">{ticket.reporter?.name || ticket.assignedUserName}</span>
                     </div>
                   )}
 
@@ -229,6 +239,15 @@ const PriorityTicketsModal = ({ isOpen, onClose, projectId, projectName, tickets
                       <span>{ticket.dueDate}</span>
                     </div>
                   )}
+
+                  {/* 3 Dots Menu */}
+                  <TicketActionMenu
+                    ticket={ticket}
+                    canManageTickets={canManageTickets}
+                    onPreview={(t) => setSelectedTicketForPreview(t)}
+                    onEdit={(t) => setSelectedTicketForEdit(t)}
+                    onDelete={(t) => setSelectedTicketForDelete(t)}
+                  />
                 </div>
               </div>
             ))
@@ -253,6 +272,32 @@ const PriorityTicketsModal = ({ isOpen, onClose, projectId, projectName, tickets
         </div>
 
       </div>
+
+      {/* Ticket Preview Modal */}
+      <TicketPreviewModal
+        isOpen={!!selectedTicketForPreview}
+        onClose={() => setSelectedTicketForPreview(null)}
+        ticket={selectedTicketForPreview}
+        canManageTickets={canManageTickets}
+        onEditClick={(t) => setSelectedTicketForEdit(t)}
+        onDeleteClick={(t) => setSelectedTicketForDelete(t)}
+      />
+
+      {/* Edit Ticket Modal */}
+      <EditTicketModal
+        isOpen={!!selectedTicketForEdit}
+        onClose={() => setSelectedTicketForEdit(null)}
+        ticket={selectedTicketForEdit}
+        onSuccess={onSuccess}
+      />
+
+      {/* Delete Ticket Modal */}
+      <DeleteTicketModal
+        isOpen={!!selectedTicketForDelete}
+        onClose={() => setSelectedTicketForDelete(null)}
+        ticket={selectedTicketForDelete}
+        onSuccess={onSuccess}
+      />
     </div>,
     document.body
   );

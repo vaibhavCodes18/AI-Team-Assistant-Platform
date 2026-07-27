@@ -6,6 +6,7 @@ import { getWorkspaceById, getAllWorkspaceMembers } from '../../api/workspaceApi
 import { getWorkspaceProjects } from '../../api/projectApi';
 import Sidebar from '../../components/layout/Sidebar';
 import CreateProjectModal from '../../components/project/CreateProjectModal';
+import LogoutModal from '../../components/common/LogoutModal';
 
 const ProjectList = () => {
   const { id } = useParams();
@@ -17,6 +18,7 @@ const ProjectList = () => {
   const [workspaceMembers, setWorkspaceMembers] = useState([]);
   const [projects, setProjects] = useState([]);
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   // Filter and Sort states
   const [searchQuery, setSearchQuery] = useState('');
@@ -246,8 +248,8 @@ const ProjectList = () => {
           </div>
           <div className="flex items-center gap-md">
             <button 
-              onClick={handleLogout}
-              className="md:hidden flex items-center justify-center p-2 text-on-surface-variant hover:text-on-surface rounded-full transition-colors"
+              onClick={() => setIsLogoutModalOpen(true)}
+              className="md:hidden flex items-center justify-center p-2 text-on-surface-variant hover:text-on-surface rounded-full transition-colors cursor-pointer bg-transparent border-none"
               title="Sign Out"
             >
               <span className="material-symbols-outlined">logout</span>
@@ -407,6 +409,11 @@ const ProjectList = () => {
         workspaceId={id}
         onSuccess={loadData}
         isOwnerOrAdmin={isOwnerOrAdmin}
+      />
+
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
       />
     </div>
   );

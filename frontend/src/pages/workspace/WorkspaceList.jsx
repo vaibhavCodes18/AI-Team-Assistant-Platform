@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { fetchUserProfile, logoutUser } from '../../api/authApi';
+import { fetchUserProfile } from '../../api/authApi';
 import Sidebar from '../../components/layout/Sidebar';
 import { getAllWorkspaces } from '../../api/workspaceApi';
 import CreateWorkspace from '../../components/workspace/CreateWorkspace';
+import LogoutModal from '../../components/common/LogoutModal';
 
 const WorkspaceList = () => {
   const [user, setUser] = useState(null);
@@ -14,6 +15,7 @@ const WorkspaceList = () => {
   
   // Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -46,17 +48,7 @@ const WorkspaceList = () => {
     init();
   }, [navigate]);
 
-  const handleLogout = async () => {
-    try {
-      const logoutRes = await logoutUser();
-      toast.success(logoutRes?.msg || 'Logged out successfully');
-    } catch (error) {
-      console.error('Logout API failed:', error);
-    } finally {
-      localStorage.removeItem('accessToken');
-      navigate('/login');
-    }
-  };
+  
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -124,8 +116,8 @@ const WorkspaceList = () => {
           </div>
           <div className="flex items-center gap-md">
             <button 
-              onClick={handleLogout}
-              className="md:hidden flex items-center justify-center p-2 text-on-surface-variant hover:text-on-surface rounded-full transition-colors"
+              onClick={() => setIsLogoutModalOpen(true)}
+              className="md:hidden flex items-center justify-center p-2 text-on-surface-variant hover:text-on-surface rounded-full transition-colors cursor-pointer bg-transparent border-none"
               title="Sign Out"
             >
               <span className="material-symbols-outlined">logout</span>
@@ -284,6 +276,11 @@ const WorkspaceList = () => {
             setWorkspaces(updatedWorkspaces.data);
           }
         }}
+      />
+
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
       />
     </div>
   );

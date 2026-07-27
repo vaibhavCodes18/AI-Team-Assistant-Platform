@@ -6,7 +6,7 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.request.UpdateProjectRe
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectMemberResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.ProjectResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TaskResponse;
-import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketResponse;
+import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketSummaryResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserSummaryResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.Project;
@@ -576,7 +576,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override 
-    public List<TicketResponse> getProjectTickets(Long projectId){
+    public List<TicketSummaryResponse> getProjectTickets(Long projectId){
         User currentUser = getAuthenticateUser();
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
@@ -587,7 +587,7 @@ public class ProjectServiceImpl implements ProjectService {
             throw new BadCredentialsException("You are not authorized to get project tasks");
         }
         List<Ticket> tickets = ticketRepository.findByProjectIdOrderByUpdatedAtDesc(projectId);
-        return tickets.stream().map(this::getTicketResponse).toList();
+        return tickets.stream().map(this::mapToSummaryTicketResponse).toList();
     }
 
     // private boolean isAuthenticated(WorkspaceMember workspaceMember, User currentUser, Project project, ProjectMember projectMember){
@@ -631,19 +631,17 @@ public class ProjectServiceImpl implements ProjectService {
                 .build();
     }
 
-    private TicketResponse getTicketResponse(Ticket ticket) {
-        if (ticket == null)
-            return null;
-        return TicketResponse.builder()
+    private TicketSummaryResponse mapToSummaryTicketResponse(Ticket ticket) {
+        return TicketSummaryResponse.builder()
                 .id(ticket.getId())
+                .projectId(ticket.getProject().getId())
                 .title(ticket.getTitle())
                 .description(ticket.getDescription())
-                .type(ticket.getType())
                 .status(ticket.getStatus())
                 .priority(ticket.getPriority())
+                .type(ticket.getType())
+                .reporterDetails(ticket.getReporter() != null ? getUserSummaryResponse(ticket.getReporter()) : null)
                 .dueDate(ticket.getDueDate())
-                .projectId(ticket.getProject().getId())
-                .reporter(ticket.getReporter() != null ? getUserSummaryResponse(ticket.getReporter()) : null)
                 .build();
     }
 
