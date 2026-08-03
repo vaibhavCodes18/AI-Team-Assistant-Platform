@@ -97,8 +97,7 @@ const ChatMainSection = ({ id, projectId }) => {
   // STOMP WebSocket Chat hook
   const {
     messages: socketMessages,
-    sendMessage,
-    isConnected,
+    sendMessage
   } = useChat(
     projectId,
     `/topic/projects/${projectId}`,

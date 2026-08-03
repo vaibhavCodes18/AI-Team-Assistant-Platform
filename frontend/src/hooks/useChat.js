@@ -63,7 +63,6 @@ const useChat = (id, topic, destination) => {
 
   return {
     messages,
-    setMessages,
     sendMessage,
     isConnected,
   };
