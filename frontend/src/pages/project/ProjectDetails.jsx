@@ -339,6 +339,14 @@ const getTicketTypeBadgeClass = (type) => {
             </div>
             <div className="h-8 w-[1px] bg-outline-variant"></div>
             <button className="text-on-surface-variant hover:text-on-surface font-medium hidden sm:inline-block" onClick={() => toast('Feedback sent!')}>Feedback</button>
+            <Link 
+              to={`/workspaces/${id}/projects/${projectId}/chat`}
+              className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 px-3.5 py-1.5 rounded-lg font-medium hover:opacity-90 transition-all flex items-center gap-1.5 cursor-pointer text-xs md:text-sm"
+              title="Open Project Chat & Channels"
+            >
+              <span className="material-symbols-outlined text-[18px]">chat_bubble</span>
+              <span>Project Chat</span>
+            </Link>
             <button 
               onClick={() => setIsInviteModalOpen(true)}
               className="bg-primary-container text-on-primary-container px-4 py-1.5 rounded-lg font-medium hover:opacity-90 transition-opacity ring-offset-2 focus:ring-2 focus:ring-primary cursor-pointer text-xs md:text-sm"

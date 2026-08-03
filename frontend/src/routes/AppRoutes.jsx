@@ -13,6 +13,7 @@ import ProjectList from "../pages/project/ProjectList.jsx";
 import ProjectDetails from "../pages/project/ProjectDetails.jsx";
 
 import ProjectMembers from "../pages/project/ProjectMembers.jsx";
+import ProjectChat from "../pages/project/ProjectChat.jsx";
 
 const AppRoutes = () => {
   return (
@@ -76,6 +77,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <ProjectMembers />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/workspaces/:id/projects/:projectId/chat" 
+          element={
+            <ProtectedRoute>
+              <ProjectChat />
             </ProtectedRoute>
           } 
         />

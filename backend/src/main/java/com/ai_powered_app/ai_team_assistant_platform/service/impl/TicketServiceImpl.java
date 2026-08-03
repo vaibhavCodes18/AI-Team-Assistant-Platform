@@ -8,6 +8,7 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketSummaryR
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserSummaryResponse;
 import com.ai_powered_app.ai_team_assistant_platform.entity.*;
+import com.ai_powered_app.ai_team_assistant_platform.enums.ChatRoomType;
 import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
 import com.ai_powered_app.ai_team_assistant_platform.enums.NotificationType;
 import com.ai_powered_app.ai_team_assistant_platform.enums.ProjectRole;
@@ -45,6 +46,7 @@ public class TicketServiceImpl implements TicketService {
     private final ActivityLogRepository activityLogRepository;
 
     private final NotificationRepository notificationRepository;
+    private final ChatRoomRepository chatRoomRepository;
 
     public TicketServiceImpl(TicketRepository ticketRepository,
                              TaskRepository taskRepository,
@@ -55,7 +57,7 @@ public class TicketServiceImpl implements TicketService {
                              ProjectRepository projectRepository,
                              ProjectMemberRepository projectMemberRepository,
                              ActivityLogRepository activityLogRepository,
-                             NotificationRepository notificationRepository) {
+                             NotificationRepository notificationRepository, ChatRoomRepository chatRoomRepository) {
         this.ticketRepository = ticketRepository;
         this.taskRepository = taskRepository;
         this.workspaceRepository = workspaceRepository;
@@ -66,6 +68,7 @@ public class TicketServiceImpl implements TicketService {
         this.projectMemberRepository = projectMemberRepository;
         this.activityLogRepository = activityLogRepository;
         this.notificationRepository = notificationRepository;
+        this.chatRoomRepository = chatRoomRepository;
     }
 
     @Override
@@ -102,6 +105,11 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket savedTicket = ticketRepository.save(ticket);
 
+        ChatRoom chatRoom = new ChatRoom();
+        chatRoom.setType(ChatRoomType.TICKET);
+        chatRoom.setTicket(savedTicket);
+        chatRoomRepository.save(chatRoom);
+
         ActivityLog activityLog = new ActivityLog();
         activityLog.setWorkspace(project.getWorkspace());
         activityLog.setUser(currentUser);
@@ -110,7 +118,7 @@ public class TicketServiceImpl implements TicketService {
         activityLog.setEntityId(savedTicket.getId());
         activityLog.setMetadata(currentUser.getName() + " created ticket '" + savedTicket.getTitle() + "'");
         activityLogRepository.save(activityLog);
-        System.out.println("Break");
+
         TicketCreatedEvent event = TicketCreatedEvent.builder()
                 .ticketId(savedTicket.getId())
                 .title(savedTicket.getTitle())

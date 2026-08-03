@@ -9,30 +9,11 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.TaskResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TicketSummaryResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserSummaryResponse;
-import com.ai_powered_app.ai_team_assistant_platform.entity.Project;
-import com.ai_powered_app.ai_team_assistant_platform.entity.ProjectMember;
-import com.ai_powered_app.ai_team_assistant_platform.entity.Task;
-import com.ai_powered_app.ai_team_assistant_platform.entity.Ticket;
-import com.ai_powered_app.ai_team_assistant_platform.entity.User;
-import com.ai_powered_app.ai_team_assistant_platform.entity.Workspace;
-import com.ai_powered_app.ai_team_assistant_platform.entity.WorkspaceMember;
-import com.ai_powered_app.ai_team_assistant_platform.entity.ActivityLog;
-import com.ai_powered_app.ai_team_assistant_platform.entity.Notification;
-import com.ai_powered_app.ai_team_assistant_platform.enums.WorkspaceRole;
-import com.ai_powered_app.ai_team_assistant_platform.enums.NotificationType;
-import com.ai_powered_app.ai_team_assistant_platform.enums.ProjectRole;
-import com.ai_powered_app.ai_team_assistant_platform.enums.ProjectStatus;
+import com.ai_powered_app.ai_team_assistant_platform.entity.*;
+import com.ai_powered_app.ai_team_assistant_platform.enums.*;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
-import com.ai_powered_app.ai_team_assistant_platform.repository.ProjectRepository;
-import com.ai_powered_app.ai_team_assistant_platform.repository.TaskRepository;
-import com.ai_powered_app.ai_team_assistant_platform.repository.TicketRepository;
-import com.ai_powered_app.ai_team_assistant_platform.repository.UserRepository;
-import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceMemberRepository;
-import com.ai_powered_app.ai_team_assistant_platform.repository.WorkspaceRepository;
-import com.ai_powered_app.ai_team_assistant_platform.repository.ActivityLogRepository;
-import com.ai_powered_app.ai_team_assistant_platform.repository.NotificationRepository;
-import com.ai_powered_app.ai_team_assistant_platform.repository.ProjectMemberRepository;
+import com.ai_powered_app.ai_team_assistant_platform.repository.*;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.ProjectService;
 import jakarta.transaction.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -63,6 +44,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     private final TaskRepository taskRepository;
     private final TicketRepository ticketRepository;
+    private final ChatRoomRepository chatRoomRepository;
 
     public ProjectServiceImpl(WorkspaceRepository workspaceRepository,
                               UserRepository userRepository,
@@ -72,7 +54,7 @@ public class ProjectServiceImpl implements ProjectService {
                               NotificationRepository notificationRepository,
                               ProjectMemberRepository projectMemberRepository,
                               TaskRepository taskRepository,
-                              TicketRepository ticketRepository) {
+                              TicketRepository ticketRepository, ChatRoomRepository chatRoomRepository) {
         this.workspaceRepository = workspaceRepository;
         this.userRepository = userRepository;
         this.workspaceMemberRepository = workspaceMemberRepository;
@@ -82,6 +64,7 @@ public class ProjectServiceImpl implements ProjectService {
         this.projectMemberRepository = projectMemberRepository;
         this.taskRepository = taskRepository;
         this.ticketRepository = ticketRepository;
+        this.chatRoomRepository = chatRoomRepository;
     }
 
     @Override
@@ -110,6 +93,12 @@ public class ProjectServiceImpl implements ProjectService {
         projectMember.setUser(currentUser);
         projectMember.setRole(ProjectRole.PROJECT_ADMIN);
         projectMemberRepository.save(projectMember);
+
+        ChatRoom chatRoom = new ChatRoom();
+        chatRoom.setType(ChatRoomType.PROJECT);
+        chatRoom.setProject(savedProject);
+        ChatRoom c = chatRoomRepository.save(chatRoom);
+        System.out.println(c.getId());
 
         ActivityLog activityLog = new ActivityLog();
         activityLog.setWorkspace(workspace);
