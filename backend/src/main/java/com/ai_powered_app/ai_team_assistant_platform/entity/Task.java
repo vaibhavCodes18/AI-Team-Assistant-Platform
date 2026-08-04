@@ -61,6 +61,9 @@ public class Task extends BaseEntity {
     @JoinColumn(name = "ticket_id")
     private Ticket ticket;
 }
+/*
+Task belongs to project or ticket. If task has project id then this belong to project. If task has ticketId the this belongs to ticket. but if we provide both then this belong to ticket else if we provide only projectId then this belongs to project
+*/
 
 
 

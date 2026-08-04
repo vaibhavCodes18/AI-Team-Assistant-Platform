@@ -81,6 +81,7 @@ public class TaskServiceImpl implements TaskService {
                         Ticket ticket = ticketRepository.findById(taskRequest.getTicketId())
                                         .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
                         task.setTicket(ticket);
+                        task.setProject(null);
                 } else {
                         // Task belong to project
                         task.setTicket(null);

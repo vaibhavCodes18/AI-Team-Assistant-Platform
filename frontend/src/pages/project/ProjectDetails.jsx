@@ -15,33 +15,7 @@ import EditTicketModal from '../../components/ticket/EditTicketModal';
 import DeleteTicketModal from '../../components/ticket/DeleteTicketModal';
 import TicketPreviewModal from '../../components/ticket/TicketPreviewModal';
 import TicketActionMenu from '../../components/ticket/TicketActionMenu';
-
-const MOCK_TICKETS = [
-  {
-    id: 104,
-    title: 'SSL Handshake Timeout',
-    priority: 'CRITICAL',
-    assignedUserName: 'Sarah Jenkins',
-    assignedUserProfileImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCkoSll_hLMv9sqPfajekBx7i2uQk8Y7baNVBWQ80p9iv_ZAEbpnwIQnJ9wB1Tt1ooNHpY0J3ed5vXX-2UWUl2aHGxX8wH5dXZfvzug7ctdboheTlj3umtsTqA-TMn6vfHXJIbVJ56864pzLvc-LMEXuBrdD_UZm-L1T0FOzdyUsiBZq7v-3D0VagyrW-lJmrM3gDwQAByHkKpJr_WtbFzym4RXNxWIuyzLB5QvMalx04ShT36Fpm1E397JMFvLbkcH3DsJzLaf0Ffn',
-    code: '#CRM-104'
-  },
-  {
-    id: 92,
-    title: 'Schema Mapping Error',
-    priority: 'HIGH',
-    assignedUserName: 'Marcus Thorne',
-    assignedUserProfileImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDuo4rJvay_8UqIPfxPN-irE7qQO-x5mZOwMcYQZ5CjaJ18TOK_TC2F0MrgpQk5teTrZm-DjpU_cu1AfnCli2o7wK7b1Ih7Lr-8YQpdleHeWKwrVLWYHAycZsJXNAScIzQbUbkNX4MCA1q_rOryz4J4i1YeiXw7sMH3WshNnSRVPf_pnicUDqSUYsYsFhdOw2Rz5Q47CRLPbcrkQKXvV_tPr5Pv27p4EcZDzPW70cFHOtxdUZ_IS06tigtErfxFJq7y7GvarxBc7w8I',
-    code: '#CRM-92'
-  },
-  {
-    id: 88,
-    title: 'Auth0 Rate Limiting',
-    priority: 'MEDIUM',
-    assignedUserName: null,
-    assignedUserProfileImage: null,
-    code: '#CRM-88'
-  }
-];
+import ProjectTasksCard from '../../components/project/ProjectTasksCard';
 
 const ProjectDetails = () => {
   const { id, projectId } = useParams();
@@ -140,15 +114,15 @@ const ProjectDetails = () => {
 
   // Helper to map project status to progress
   const getProjectProgressInfo = () => {
-    if (!project) return { percent: 68, label: 'Phase 3 of 5', date: 'Estimated Completion: Oct 24', startDate: 'N/A', deadline: 'Oct 24, 2026', status: 'ACTIVE' };
+    if (!project) return { percent: 0, label: 'No Tickets', date: 'N/A', startDate: 'N/A', deadline: 'N/A', status: 'ACTIVE' };
 
     const formattedStartDate = project.startDate ? new Date(project.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
-    const formattedDeadline = project.deadline ? new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Oct 24, 2026';
-    const dateStr = project.deadline ? new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) : 'Oct 24';
+    const formattedDeadline = project.deadline ? new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+    const dateStr = project.deadline ? new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) : 'N/A';
 
-    let percent = 100;
-    let label = 'Phase 3 of 5';
-    let dateLabel = `Estimated Completion: ${dateStr}`;
+    let percent = 0;
+    let label = '0 Tickets Resolved';
+    let dateLabel = project.deadline ? `Deadline: ${dateStr}` : 'No Deadline';
 
     if (tickets.length > 0) {
       const total = tickets.length;
@@ -161,23 +135,23 @@ const ProjectDetails = () => {
         case 'COMPLETED':
           percent = 100;
           label = 'Project Completed';
-          dateLabel = `Completed: ${dateStr}`;
+          dateLabel = dateStr !== 'N/A' ? `Completed: ${dateStr}` : 'Completed';
           break;
         case 'ON_HOLD':
-          percent = 25;
+          percent = 0;
           label = 'Project On Hold';
           dateLabel = 'On Hold';
           break;
         case 'ARCHIVED':
-          percent = 10;
+          percent = 0;
           label = 'Project Archived';
           dateLabel = 'Archived';
           break;
         case 'ACTIVE':
         default:
-          percent = 68;
-          label = 'Phase 3 of 5';
-          dateLabel = `Estimated Completion: ${dateStr}`;
+          percent = 0;
+          label = '0 Tickets Resolved';
+          dateLabel = dateStr !== 'N/A' ? `Deadline: ${dateStr}` : 'No Deadline';
           break;
       }
     }
@@ -278,7 +252,7 @@ const getTicketTypeBadgeClass = (type) => {
 
   // Determine lists to render
   const renderedMembers = members;
-  const renderedTickets = tickets.length > 0 ? tickets.map(t => ({
+  const renderedTickets = tickets.map(t => ({
     id: t.id,
     title: t.title,
     description: t.description,
@@ -290,7 +264,7 @@ const getTicketTypeBadgeClass = (type) => {
     assignedUserName: t.reporter?.name || null,
     assignedUserProfileImage: t.reporter?.profileImage || null,
     code: `#TCK-${t.id}`
-  })) : MOCK_TICKETS;
+  }));
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-on-background font-body-md">
@@ -441,7 +415,7 @@ const getTicketTypeBadgeClass = (type) => {
                 </div>
               </div>
               
-              {/* Checklist - Dynamic based on tickets, fallback to mock */}
+              {/* Checklist - Dynamic based on tickets */}
               <div className="flex flex-wrap gap-x-6 gap-y-2 mt-6 border-t border-outline-variant/30 pt-4">
                 {tickets.length > 0 ? (
                   tickets.slice(0, 3).map((ticket) => (
@@ -453,20 +427,7 @@ const getTicketTypeBadgeClass = (type) => {
                     </div>
                   ))
                 ) : (
-                  <>
-                    <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                      <span className="material-symbols-outlined text-sm text-primary">check_circle</span>
-                      Backend API Linked
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                      <span className="material-symbols-outlined text-sm text-primary">check_circle</span>
-                      Authentication Layer
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                      <span className="material-symbols-outlined text-sm text-outline">radio_button_unchecked</span>
-                      CRM Data Mapping
-                    </div>
-                  </>
+                  <span className="text-xs text-on-surface-variant italic">No tickets created for this project yet.</span>
                 )}
               </div>
             </div>
@@ -568,132 +529,81 @@ const getTicketTypeBadgeClass = (type) => {
                   </span>
                 </div>
               </div>
-              <div className="flex-1 overflow-x-auto">
-                <table className="w-full text-left min-w-[400px]">
-                  <thead className="text-xs text-on-surface-variant border-b border-outline-variant bg-surface-container-lowest">
-                    <tr>
-                      <th className="px-lg py-3 font-medium">Issue</th>
-                      <th className="px-lg py-3 font-medium">Status</th>
-                      <th className="px-lg py-3 font-medium">Priority</th>
-                      <th className="px-lg py-3 font-medium">Type</th>
-                      <th className="px-lg py-3 font-medium text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-outline-variant">
-                    {renderedTickets.slice(0, 3).map((ticket, index) => {
-                      return (
-                        <tr 
-                          key={ticket.id || index} 
-                          className="hover:bg-surface-container-high transition-colors cursor-pointer"
-                          onClick={() => setSelectedTicketForPreview(ticket)}
-                        >
-                          <td className="px-lg py-4">
-                            <p className="text-sm text-on-surface font-medium line-clamp-1">{ticket.title}</p>
-                            <p className="text-[11px] text-on-surface-variant font-label-sm">{ticket.code}</p>
-                          </td>
-                          <td className="px-lg py-4">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTicketStatusBadgeClass(ticket.status)}`}>
-                              {formatStatus(ticket.status)}
-                            </span>
-                          </td>
-                          <td className="px-lg py-4">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getPriorityBadgeClass(ticket.priority)}`}>
-                              {formatPriority(ticket.priority)}
-                            </span>
-                          </td>
-                          <td className="px-lg py-4">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTicketTypeBadgeClass(ticket.type)}`}>
-                              {formatType(ticket.type)}
-                            </span>
-                          </td>
-                          <td className="px-lg py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                            <TicketActionMenu
-                              ticket={ticket}
-                              canManageTickets={canManageTickets}
-                              onPreview={(t) => setSelectedTicketForPreview(t)}
-                              onEdit={(t) => setSelectedTicketForEdit(t)}
-                              onDelete={(t) => setSelectedTicketForDelete(t)}
-                            />
-                          </td>
+              {renderedTickets.length > 0 ? (
+                <>
+                  <div className="flex-1 overflow-x-auto">
+                    <table className="w-full text-left min-w-[400px]">
+                      <thead className="text-xs text-on-surface-variant border-b border-outline-variant bg-surface-container-lowest">
+                        <tr>
+                          <th className="px-lg py-3 font-medium">Issue</th>
+                          <th className="px-lg py-3 font-medium">Status</th>
+                          <th className="px-lg py-3 font-medium">Priority</th>
+                          <th className="px-lg py-3 font-medium">Type</th>
+                          <th className="px-lg py-3 font-medium text-right">Actions</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              <div className="p-4 bg-surface-container-lowest text-center">
-                <button 
-                  className="text-primary text-sm font-medium hover:underline cursor-pointer bg-transparent border-none outline-none" 
-                  onClick={() => setIsTicketsModalOpen(true)}
-                >
-                  View All Priority Tickets ({renderedTickets.length})
-                </button>
-              </div>
+                      </thead>
+                      <tbody className="divide-y divide-outline-variant">
+                        {renderedTickets.slice(0, 3).map((ticket, index) => {
+                          return (
+                            <tr 
+                              key={ticket.id || index} 
+                              className="hover:bg-surface-container-high transition-colors cursor-pointer"
+                              onClick={() => setSelectedTicketForPreview(ticket)}
+                            >
+                              <td className="px-lg py-4">
+                                <p className="text-sm text-on-surface font-medium line-clamp-1">{ticket.title}</p>
+                                <p className="text-[11px] text-on-surface-variant font-label-sm">{ticket.code}</p>
+                              </td>
+                              <td className="px-lg py-4">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTicketStatusBadgeClass(ticket.status)}`}>
+                                  {formatStatus(ticket.status)}
+                                </span>
+                              </td>
+                              <td className="px-lg py-4">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getPriorityBadgeClass(ticket.priority)}`}>
+                                  {formatPriority(ticket.priority)}
+                                </span>
+                              </td>
+                              <td className="px-lg py-4">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTicketTypeBadgeClass(ticket.type)}`}>
+                                  {formatType(ticket.type)}
+                                </span>
+                              </td>
+                              <td className="px-lg py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                <TicketActionMenu
+                                  ticket={ticket}
+                                  canManageTickets={canManageTickets}
+                                  onPreview={(t) => setSelectedTicketForPreview(t)}
+                                  onEdit={(t) => setSelectedTicketForEdit(t)}
+                                  onDelete={(t) => setSelectedTicketForDelete(t)}
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="p-4 bg-surface-container-lowest text-center">
+                    <button 
+                      className="text-primary text-sm font-medium hover:underline cursor-pointer bg-transparent border-none outline-none" 
+                      onClick={() => setIsTicketsModalOpen(true)}
+                    >
+                      View All Priority Tickets ({renderedTickets.length})
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[180px]">
+                  <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-2">confirmation_number</span>
+                  <p className="text-on-surface font-medium text-sm">No Tickets Found</p>
+                  <p className="text-on-surface-variant text-xs mt-1">There are no tickets created for this project yet.</p>
+                </div>
+              )}
             </div>
 
-            {/* Linked Documents Grid */}
-            <div className="space-y-lg">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary">description</span>
-                  <h3 className="font-headline-md text-[20px] text-on-surface font-bold">Recent Documents</h3>
-                </div>
-                <button className="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant cursor-pointer bg-transparent border-none" onClick={() => toast('Add Document (mock)')}>
-                  <span className="material-symbols-outlined">add</span>
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
-                <div className="glass-panel p-md rounded-xl hover:border-primary/50 transition-all cursor-pointer group" onClick={() => toast('Opening Architecture_Spec_v2.pdf')}>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="p-2 bg-blue-500/10 text-primary rounded-lg">
-                      <span className="material-symbols-outlined">description</span>
-                    </div>
-                    <span className="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); toast('Menu (mock)'); }}>more_vert</span>
-                  </div>
-                  <p className="text-sm font-medium text-on-surface mb-1 truncate">Architecture_Spec_v2.pdf</p>
-                  <p className="text-xs text-on-surface-variant mb-4">Updated 2h ago by Sarah J.</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-primary uppercase font-bold tracking-wider">PDF</span>
-                    <span className="text-[10px] text-on-surface-variant">1.4 MB</span>
-                  </div>
-                </div>
-
-                <div className="glass-panel p-md rounded-xl hover:border-primary/50 transition-all cursor-pointer group" onClick={() => toast('Opening Data_Mapping_Matrix.xlsx')}>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="p-2 bg-purple-500/10 text-tertiary rounded-lg">
-                      <span className="material-symbols-outlined">table_chart</span>
-                    </div>
-                    <span className="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); toast('Menu (mock)'); }}>more_vert</span>
-                  </div>
-                  <p className="text-sm font-medium text-on-surface mb-1 truncate">Data_Mapping_Matrix.xlsx</p>
-                  <p className="text-xs text-on-surface-variant mb-4">Updated Yesterday</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-tertiary uppercase font-bold tracking-wider">Sheets</span>
-                    <span className="text-[10px] text-on-surface-variant">420 KB</span>
-                  </div>
-                </div>
-
-                <div className="glass-panel p-md rounded-xl hover:border-primary/50 transition-all cursor-pointer group" onClick={() => toast('Opening API_Endpoints_Config.json')}>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="p-2 bg-green-500/10 text-on-secondary-container rounded-lg">
-                      <span className="material-symbols-outlined">code</span>
-                    </div>
-                    <span className="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); toast('Menu (mock)'); }}>more_vert</span>
-                  </div>
-                  <p className="text-sm font-medium text-on-surface mb-1 truncate">API_Endpoints_Config.json</p>
-                  <p className="text-xs text-on-surface-variant mb-4">Updated 4d ago</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-on-secondary-container uppercase font-bold tracking-wider">JSON</span>
-                    <span className="text-[10px] text-on-surface-variant">12 KB</span>
-                  </div>
-                </div>
-
-                <div className="glass-panel p-md rounded-xl border-dashed border-outline-variant flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors group cursor-pointer" onClick={() => toast('Upload File dialog (mock)')}>
-                  <span className="material-symbols-outlined text-3xl mb-2 group-hover:text-primary transition-colors">upload_file</span>
-                  <p className="text-xs font-medium">Upload File</p>
-                </div>
-              </div>
-            </div>
+            {/* Project Tasks Component */}
+            <ProjectTasksCard />
           </div>
 
           {/* Dynamic Footer/Status Row */}
