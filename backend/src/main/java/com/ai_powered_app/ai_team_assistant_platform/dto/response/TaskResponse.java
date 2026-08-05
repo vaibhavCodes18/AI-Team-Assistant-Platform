@@ -32,6 +32,8 @@ public class TaskResponse {
     private Long projectId;
 
     private Long assignedUserId;
+    
+    private String assignedUserName;
 
     private Long createdByUserId;
     private Long ticketId;

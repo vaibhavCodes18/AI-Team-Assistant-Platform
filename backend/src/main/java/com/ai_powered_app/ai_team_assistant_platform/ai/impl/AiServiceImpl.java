@@ -5,7 +5,6 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.response.GenerateDocsRe
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.repository.ActivityLogRepository;
 import com.ai_powered_app.ai_team_assistant_platform.utils.AiPrompt;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;

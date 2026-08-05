@@ -616,6 +616,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .projectId(task.getProject().getId())
                 .ticketId(task.getTicket() != null ? task.getTicket().getId() : null)
                 .assignedUserId(task.getAssignee() != null ? task.getAssignee().getId() : null)
+                .assignedUserName(task.getAssignee() != null ? task.getAssignee().getName() : null)
                 .createdByUserId(task.getCreatedBy().getId())
                 .build();
     }

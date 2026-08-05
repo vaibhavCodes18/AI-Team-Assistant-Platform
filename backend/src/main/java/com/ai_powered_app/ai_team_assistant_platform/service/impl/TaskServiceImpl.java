@@ -237,6 +237,7 @@ public class TaskServiceImpl implements TaskService {
         private TaskResponse mapToTaskResponse(Task task) {
                 if (task == null)
                         return null;
+                System.out.println("Assigned User Name: " + task.getAssignee().getName());
                 return TaskResponse.builder()
                                 .id(task.getId())
                                 .title(task.getTitle())
@@ -247,6 +248,7 @@ public class TaskServiceImpl implements TaskService {
                                 .projectId(task.getProject().getId())
                                 .ticketId(task.getTicket() != null ? task.getTicket().getId() : null)
                                 .assignedUserId(task.getAssignee() != null ? task.getAssignee().getId() : null)
+                                .assignedUserName(task.getAssignee() != null ? task.getAssignee().getName() : null)
                                 .createdByUserId(task.getCreatedBy().getId())
                                 .build();
         }

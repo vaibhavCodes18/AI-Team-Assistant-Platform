@@ -1,112 +1,171 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'react-hot-toast';
+import { addTask, deleteTaskById, getProjectTasks, updateTask } from '../../api/taskApi';
+import { getProjectMembers } from '../../api/projectApi';
 
-const INITIAL_TASKS = [
-  {
-    id: 'TSK-101',
-    title: 'Setup CI/CD Deployment Pipeline',
-    description: 'Configure GitHub Actions for automated build and staging deployment',
-    status: 'COMPLETED',
-    priority: 'HIGH',
-    dueDate: '2026-08-10',
-    assignee: 'Alex Rivera'
-  },
-  {
-    id: 'TSK-102',
-    title: 'Implement OAuth2 SSO Integration',
-    description: 'Integrate Google and GitHub OAuth providers with Spring Security',
-    status: 'IN_PROGRESS',
-    priority: 'CRITICAL',
-    dueDate: '2026-08-15',
-    assignee: 'Sarah Chen'
-  },
-  {
-    id: 'TSK-103',
-    title: 'Database Schema Optimization',
-    description: 'Index high-frequency query columns and add pagination support',
-    status: 'TO_DO',
-    priority: 'MEDIUM',
-    dueDate: '2026-08-18',
-    assignee: 'David Park'
-  },
-  {
-    id: 'TSK-104',
-    title: 'UI/UX Accessibility Audit',
-    description: 'Ensure WCAG 2.1 AA compliance across all dashboard views',
-    status: 'TO_DO',
-    priority: 'LOW',
-    dueDate: '2026-08-22',
-    assignee: 'Emma Watson'
-  }
-];
-
-const ProjectTasksCard = () => {
-  const [tasks, setTasks] = useState(INITIAL_TASKS);
+const ProjectTasksCard = ({ projectId }) => {
+  const [tasks, setTasks] = useState([]);
   const [filter, setFilter] = useState('ALL');
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [users, setUsers] = useState([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskDesc, setNewTaskDesc] = useState('');
-  const [newTaskPriority, setNewTaskPriority] = useState('MEDIUM');
-  const [newTaskAssignee, setNewTaskAssignee] = useState('');
-  const [newTaskDueDate, setNewTaskDueDate] = useState('');
+  const [taskToDelete, setTaskToDelete] = useState(null);
 
-  const completedCount = tasks.filter((t) => t.status === 'COMPLETED').length;
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    priority: 'MEDIUM',
+    assigneeId: '',
+    dueDate: '',
+  });
+
+  const completedCount = tasks.filter((t) => t.status === 'DONE').length;
   const totalCount = tasks.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const toggleTaskStatus = (id) => {
-    setTasks((prev) =>
-      prev.map((task) => {
-        if (task.id === id) {
-          const nextStatus = task.status === 'COMPLETED' ? 'IN_PROGRESS' : 'COMPLETED';
-          if (nextStatus === 'COMPLETED') {
-            toast.success(`Task "${task.title}" marked as completed!`);
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      if (!projectId) return;
+      setLoading(true);
+
+      try {
+        const [membersRes, tasksRes] = await Promise.allSettled([
+          getProjectMembers(projectId),
+          getProjectTasks(projectId),
+        ]);
+
+        if (isMounted) {
+          if (membersRes.status === 'fulfilled' && membersRes.value?.data) {
+            setUsers(membersRes.value.data);
           }
-          return { ...task, status: nextStatus };
+          if (tasksRes.status === 'fulfilled' && tasksRes.value?.data) {
+            setTasks(tasksRes.value.data);
+          } else if (tasksRes.status === 'fulfilled' && Array.isArray(tasksRes.value)) {
+            setTasks(tasksRes.value);
+          }
         }
-        return task;
-      })
+      } catch (error) {
+        console.error('Failed to load project tasks data:', error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [projectId]);
+
+  const toggleTaskStatus = async (task) => {
+    const nextStatus = task.status === 'DONE' ? 'TODO' : 'DONE';
+    const prevStatus = task.status;
+
+    // Optimistic UI update
+    setTasks((prev) =>
+      prev.map((t) => (t.id === task.id ? { ...t, status: nextStatus } : t))
     );
+
+    try {
+      const res = await updateTask(task.id, { status: nextStatus });
+      const updatedTask = res?.data || res;
+      if (updatedTask && updatedTask.id) {
+        setTasks((prev) =>
+          prev.map((t) => (t.id === task.id ? updatedTask : t))
+        );
+      }
+      toast.success(
+        nextStatus === 'DONE'
+          ? `Task "${task.title}" marked as completed!`
+          : `Task "${task.title}" marked as to-do.`
+      );
+    } catch (error) {
+      console.error('Failed to update task status:', error);
+      // Revert optimistic update
+      setTasks((prev) =>
+        prev.map((t) => (t.id === task.id ? { ...t, status: prevStatus } : t))
+      );
+      const errorMsg = error?.response?.data?.message || 'Failed to update task status.';
+      toast.error(errorMsg);
+    }
   };
 
-  const handleDeleteTask = (id, title) => {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-    toast.success(`Task "${title}" deleted.`);
+  const handleDeleteTask = (task) => {
+    setTaskToDelete(task);
   };
 
-  const handleCreateTask = (e) => {
+  const confirmDeleteTask = async () => {
+    if (!taskToDelete) return;
+    const { id, title } = taskToDelete;
+    setDeletingId(id);
+
+    try {
+      await deleteTaskById(id);
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+      toast.success(`Task "${title}" deleted successfully.`);
+      setTaskToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      const errorMsg = error?.response?.data?.message || 'Failed to delete task.';
+      toast.error(errorMsg);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleCreateTask = async (e) => {
     e.preventDefault();
-    if (!newTaskTitle.trim()) {
-      toast.error('Please enter a task title');
+
+    if (!formData.title.trim()) {
+      toast.error('Task title is required.');
       return;
     }
 
-    const newTask = {
-      id: `TSK-${Math.floor(100 + Math.random() * 900)}`,
-      title: newTaskTitle.trim(),
-      description: newTaskDesc.trim() || 'No description provided',
-      status: 'TO_DO',
-      priority: newTaskPriority,
-      dueDate: newTaskDueDate || new Date().toISOString().split('T')[0],
-      assignee: newTaskAssignee.trim() || 'Unassigned'
+    setSubmitting(true);
+
+    const newTaskPayload = {
+      title: formData.title.trim(),
+      description: formData.description?.trim() || null,
+      priority: formData.priority || 'MEDIUM',
+      projectId: parseInt(projectId, 10),
+      assigneeId: formData.assigneeId ? parseInt(formData.assigneeId, 10) : null,
+      dueDate: formData.dueDate ? formData.dueDate : null,
     };
 
-    setTasks([newTask, ...tasks]);
-    toast.success('New task added successfully!');
-    setNewTaskTitle('');
-    setNewTaskDesc('');
-    setNewTaskPriority('MEDIUM');
-    setNewTaskAssignee('');
-    setNewTaskDueDate('');
-    setIsCreateModalOpen(false);
+    try {
+      const response = await addTask(newTaskPayload);
+      const createdTask = response?.data || response;
+
+      if (createdTask) {
+        toast.success('Task created successfully');
+        setTasks((prev) => [createdTask, ...prev]);
+        setFormData({
+          title: '',
+          description: '',
+          priority: 'MEDIUM',
+          assigneeId: '',
+          dueDate: '',
+        });
+        setIsCreateModalOpen(false);
+      }
+    } catch (error) {
+      console.error('Failed to add task:', error);
+      const errorMsg = error?.response?.data?.message || 'Failed to create task.';
+      toast.error(errorMsg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const filteredTasks = tasks.filter((task) => {
-    if (filter === 'TO_DO') return task.status === 'TO_DO';
-    if (filter === 'IN_PROGRESS') return task.status === 'IN_PROGRESS';
-    if (filter === 'COMPLETED') return task.status === 'COMPLETED';
-    return true;
+    if (filter === 'ALL') return true;
+    return task.status === filter;
   });
 
   const getPriorityBadgeClass = (priority) => {
@@ -126,26 +185,39 @@ const ProjectTasksCard = () => {
 
   const getStatusBadgeClass = (status) => {
     switch (status?.toUpperCase()) {
-      case 'COMPLETED':
-        return 'bg-green-500/10 text-green-400 border border-green-500/30';
+      case 'TODO':
+        return 'bg-sky-500/10 text-sky-400 border border-sky-500/30';
       case 'IN_PROGRESS':
         return 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30';
-      case 'TO_DO':
+      case 'IN_REVIEW':
+        return 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/30';
+      case 'DONE':
+        return 'bg-green-500/10 text-green-400 border border-green-500/30';
       default:
         return 'bg-sky-500/10 text-sky-400 border border-sky-500/30';
     }
   };
 
   const formatStatusLabel = (status) => {
-    if (status === 'IN_PROGRESS') return 'In Progress';
-    if (status === 'COMPLETED') return 'Completed';
-    return 'To Do';
+    switch (status) {
+      case 'TODO':
+        return 'To Do';
+      case 'IN_PROGRESS':
+        return 'In Progress';
+      case 'IN_REVIEW':
+        return 'In Review';
+      case 'DONE':
+        return 'Done';
+      default:
+        return status || 'To Do';
+    }
   };
 
   const getInitials = (name) => {
     if (!name || name === 'Unassigned') return 'U';
     return name
       .split(' ')
+      .filter(Boolean)
       .map((n) => n[0])
       .slice(0, 2)
       .join('')
@@ -186,7 +258,7 @@ const ProjectTasksCard = () => {
 
       {/* Filter Tabs */}
       <div className="px-lg py-2 flex items-center gap-2 bg-surface-container-lowest border-b border-outline-variant/30 text-xs overflow-x-auto custom-scrollbar">
-        {['ALL', 'TO_DO', 'IN_PROGRESS', 'COMPLETED'].map((tab) => (
+        {['ALL', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'].map((tab) => (
           <button
             key={tab}
             onClick={() => setFilter(tab)}
@@ -203,9 +275,16 @@ const ProjectTasksCard = () => {
 
       {/* Task List */}
       <div className="flex-1 overflow-y-auto p-md space-y-3 custom-scrollbar min-h-[260px] max-h-[380px]">
-        {filteredTasks.length > 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center p-8 text-center min-h-[200px] gap-2">
+            <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-xs text-on-surface-variant">Loading tasks...</p>
+          </div>
+        ) : filteredTasks.length > 0 ? (
           filteredTasks.map((task) => {
-            const isDone = task.status === 'COMPLETED';
+            const isDone = task.status === 'DONE';
+            const isDeleting = deletingId === task.id;
+
             return (
               <div
                 key={task.id}
@@ -218,9 +297,9 @@ const ProjectTasksCard = () => {
                 {/* Checkbox & Details */}
                 <div className="flex items-start gap-3 min-w-0 flex-1">
                   <button
-                    onClick={() => toggleTaskStatus(task.id)}
+                    onClick={() => toggleTaskStatus(task)}
                     className="mt-0.5 shrink-0 text-on-surface-variant hover:text-primary transition-colors cursor-pointer bg-transparent border-none p-0 outline-none"
-                    title={isDone ? 'Mark as Incomplete' : 'Mark as Complete'}
+                    title={isDone ? 'Mark as To-Do' : 'Mark as Done'}
                   >
                     <span className={`material-symbols-outlined text-xl ${isDone ? 'text-emerald-400 font-bold' : 'text-outline'}`}>
                       {isDone ? 'check_circle' : 'radio_button_unchecked'}
@@ -240,32 +319,37 @@ const ProjectTasksCard = () => {
                       </span>
                     </div>
 
-                    <p className="text-xs text-on-surface-variant line-clamp-1 mb-2">
-                      {task.description}
-                    </p>
+                    {task.description && (
+                      <p className="text-xs text-on-surface-variant line-clamp-1 mb-2">
+                        {task.description}
+                      </p>
+                    )}
 
-                    <div className="flex items-center gap-4 text-[11px] text-on-surface-variant">
+                    <div className="flex items-center gap-4 text-[11px] text-on-surface-variant flex-wrap">
                       <div className="flex items-center gap-1">
                         <span className="material-symbols-outlined text-sm text-outline">calendar_today</span>
-                        <span>Due: {task.dueDate}</span>
+                        <span>{task.dueDate ? `Due: ${task.dueDate}` : 'No due date'}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="w-4 h-4 rounded-full bg-primary/20 text-primary text-[9px] font-bold flex items-center justify-center">
-                          {getInitials(task.assignee)}
+                          {getInitials(task.assignedUserName)}
                         </div>
-                        <span className="truncate max-w-[100px]">{task.assignee}</span>
+                        <span className="truncate max-w-[120px]">{task.assignedUserName || 'Unassigned'}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Actions */}
+                {/* Delete Button */}
                 <button
-                  onClick={() => handleDeleteTask(task.id, task.title)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-on-surface-variant hover:text-error hover:bg-error-container/20 rounded transition-all cursor-pointer bg-transparent border-none"
+                  onClick={() => handleDeleteTask(task)}
+                  disabled={isDeleting}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-on-surface-variant hover:text-error hover:bg-error-container/20 rounded transition-all cursor-pointer bg-transparent border-none shrink-0"
                   title="Delete Task"
                 >
-                  <span className="material-symbols-outlined text-lg">delete</span>
+                  <span className="material-symbols-outlined text-lg">
+                    {isDeleting ? 'hourglass_top' : 'delete'}
+                  </span>
                 </button>
               </div>
             );
@@ -279,120 +363,179 @@ const ProjectTasksCard = () => {
         )}
       </div>
 
-      {/* Add Task Modal (Full Screen via React Portal) */}
+      {/* Delete Confirmation Modal */}
+      {taskToDelete &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in text-left">
+            <div className="bg-surface border border-outline-variant/60 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+              <div className="flex items-center gap-3 text-error">
+                <span className="material-symbols-outlined text-3xl">warning</span>
+                <h3 className="text-lg font-bold text-on-surface">Delete Task</h3>
+              </div>
+              <p className="text-sm text-on-surface-variant">
+                Are you sure you want to delete task <strong className="text-on-surface font-semibold">"{taskToDelete.title}"</strong>? This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setTaskToDelete(null)}
+                  disabled={deletingId !== null}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors border border-outline-variant/40 bg-transparent cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteTask}
+                  disabled={deletingId !== null}
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-error text-on-error hover:bg-error/90 transition-all border-none cursor-pointer flex items-center gap-2 shadow-md"
+                >
+                  {deletingId !== null ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-on-error border-t-transparent rounded-full animate-spin"></div>
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <span>Delete Task</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Create Task Modal (Ticket Modal Layout Style) */}
       {isCreateModalOpen &&
         createPortal(
-          <div className="fixed inset-0 z-[9999] bg-background flex flex-col h-screen w-screen overflow-y-auto animate-fade-in text-left">
-            {/* Top Navigation Bar */}
-            <div className="h-16 px-6 md:px-12 border-b border-outline-variant/40 flex justify-between items-center bg-surface/90 backdrop-blur-md sticky top-0 z-10 shrink-0">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="p-2 hover:bg-surface-container-high rounded-full text-on-surface-variant hover:text-on-surface transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center"
-                  title="Back to Project"
-                >
-                  <span className="material-symbols-outlined text-2xl">arrow_back</span>
-                </button>
-                <div>
-                  <h2 className="text-lg md:text-xl font-bold text-on-surface flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary">add_task</span>
-                    Create Project Task
-                  </h2>
-                  <p className="text-xs text-on-surface-variant hidden sm:block">
-                    Add a new actionable task to your project workspace
-                  </p>
-                </div>
-              </div>
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-md text-left">
+            <div className="bg-surface-container border border-outline-variant rounded-xl p-lg max-w-lg w-full space-y-lg shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 text-on-background max-h-[90vh] overflow-y-auto custom-scrollbar">
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="p-2 hover:bg-surface-container-high rounded-full text-on-surface-variant hover:text-on-surface transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center"
-                title="Close"
+                className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer bg-transparent border-none"
+                disabled={submitting}
               >
-                <span className="material-symbols-outlined text-2xl">close</span>
+                <span className="material-symbols-outlined">close</span>
               </button>
-            </div>
 
-            {/* Form Body */}
-            <div className="flex-1 max-w-4xl w-full mx-auto p-6 md:p-12 flex flex-col justify-between">
-              <form onSubmit={handleCreateTask} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-semibold text-on-surface mb-2">
-                    Task Title <span className="text-primary">*</span>
+              <div className="text-left">
+                <h3 className="text-headline-md font-bold text-on-surface flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary">add_task</span>
+                  Create New Task
+                </h3>
+                <p className="text-body-md text-on-surface-variant mt-xs">
+                  Add an actionable task to your project workspace.
+                </p>
+              </div>
+
+              <form onSubmit={handleCreateTask} className="space-y-md text-left">
+                <div className="space-y-xs">
+                  <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="taskTitle">
+                    Task Title *
                   </label>
                   <input
+                    className="w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none"
+                    id="taskTitle"
                     type="text"
                     required
+                    maxLength={150}
                     placeholder="e.g. Configure SSL Certificate & OAuth setup"
-                    value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-surface-container-lowest border border-outline-variant/60 text-on-surface text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 shadow-sm"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    disabled={submitting}
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-on-surface mb-2">
+                <div className="space-y-xs">
+                  <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="taskDescription">
                     Description
                   </label>
                   <textarea
-                    rows="4"
+                    className="w-full p-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none resize-none h-24"
+                    id="taskDescription"
+                    maxLength={1000}
                     placeholder="Provide detailed description, acceptance criteria, or context..."
-                    value={newTaskDesc}
-                    onChange={(e) => setNewTaskDesc(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-surface-container-lowest border border-outline-variant/60 text-on-surface text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none shadow-sm"
-                  ></textarea>
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    disabled={submitting}
+                  />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-on-surface mb-2">Priority</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
+                  <div className="space-y-xs">
+                    <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="taskPriority">
+                      Priority *
+                    </label>
                     <select
-                      value={newTaskPriority}
-                      onChange={(e) => setNewTaskPriority(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl bg-surface-container-lowest border border-outline-variant/60 text-on-surface text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 cursor-pointer shadow-sm"
+                      className="w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
+                      id="taskPriority"
+                      value={formData.priority}
+                      onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                      disabled={submitting}
                     >
-                      <option value="LOW">Low</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="HIGH">High</option>
-                      <option value="CRITICAL">Critical</option>
+                      <option value="LOW" className="bg-[#191b23] text-on-surface">Low</option>
+                      <option value="MEDIUM" className="bg-[#191b23] text-on-surface">Medium</option>
+                      <option value="HIGH" className="bg-[#191b23] text-on-surface">High</option>
+                      <option value="CRITICAL" className="bg-[#191b23] text-on-surface">Critical</option>
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-on-surface mb-2">Due Date</label>
+                  <div className="space-y-xs">
+                    <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="taskDueDate">
+                      Due Date
+                    </label>
                     <input
+                      className="w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
+                      id="taskDueDate"
                       type="date"
-                      value={newTaskDueDate}
-                      onChange={(e) => setNewTaskDueDate(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl bg-surface-container-lowest border border-outline-variant/60 text-on-surface text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 cursor-pointer shadow-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-on-surface mb-2">Assignee</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Sarah J."
-                      value={newTaskAssignee}
-                      onChange={(e) => setNewTaskAssignee(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl bg-surface-container-lowest border border-outline-variant/60 text-on-surface text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 shadow-sm"
+                      value={formData.dueDate}
+                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                      disabled={submitting}
                     />
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="pt-8 border-t border-outline-variant/40 flex justify-end gap-4">
+                <div className="space-y-xs">
+                  <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="taskAssignee">
+                    Assignee
+                  </label>
+                  <select
+                    className="w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
+                    id="taskAssignee"
+                    value={formData.assigneeId}
+                    onChange={(e) => setFormData({ ...formData, assigneeId: e.target.value })}
+                    disabled={submitting}
+                  >
+                    <option value="" className="bg-[#191b23] text-on-surface">Unassigned</option>
+                    {users.map((u) => {
+                      const userId = u.user?.id || u.id;
+                      const userName = u.user?.name || 'Member';
+                      const userEmail = u.user?.email ? ` (${u.user.email})` : '';
+                      const role = u.role ? ` - ${u.role}` : '';
+                      return (
+                        <option key={userId} value={userId} className="bg-[#191b23] text-on-surface">
+                          {userName}{userEmail}{role}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <div className="flex justify-end gap-md pt-md border-t border-outline-variant mt-lg">
                   <button
                     type="button"
                     onClick={() => setIsCreateModalOpen(false)}
-                    className="px-6 py-3 rounded-xl text-sm font-medium text-on-surface-variant hover:bg-surface-container-high transition-colors border border-outline-variant/40 bg-transparent cursor-pointer"
+                    className="px-4 py-2 border border-outline-variant hover:bg-surface-container-high text-on-surface font-bold rounded-lg transition-colors cursor-pointer"
+                    disabled={submitting}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-8 py-3 rounded-xl text-sm font-semibold bg-primary text-on-primary hover:bg-primary/90 transition-all border-none cursor-pointer shadow-lg hover:shadow-primary/20"
+                    className="px-5 py-2 bg-primary text-on-primary font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-all flex items-center gap-xs cursor-pointer"
+                    disabled={submitting}
                   >
-                    Save Task
+                    {submitting ? 'Creating...' : 'Create Task'}
                   </button>
                 </div>
               </form>

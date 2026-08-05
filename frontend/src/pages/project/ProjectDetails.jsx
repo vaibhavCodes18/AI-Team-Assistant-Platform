@@ -603,7 +603,7 @@ const getTicketTypeBadgeClass = (type) => {
             </div>
 
             {/* Project Tasks Component */}
-            <ProjectTasksCard />
+            <ProjectTasksCard projectId={projectId}/>
           </div>
 
           {/* Dynamic Footer/Status Row */}
