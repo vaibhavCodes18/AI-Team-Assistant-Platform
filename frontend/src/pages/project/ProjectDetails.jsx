@@ -522,7 +522,7 @@ const getTicketTypeBadgeClass = (type) => {
                   <span className="text-xs text-on-surface-variant">Sorted by Severity</span>
                   <span 
                     className="material-symbols-outlined text-lg text-on-surface-variant cursor-pointer hover:text-on-surface transition-colors" 
-                    onClick={() => setIsTicketsModalOpen(true)}
+                    onClick={() => navigate(`/workspaces/${id}/projects/${projectId}/tickets`)}
                     title="View & Filter All Tickets"
                   >
                     filter_list
@@ -587,7 +587,7 @@ const getTicketTypeBadgeClass = (type) => {
                   <div className="p-4 bg-surface-container-lowest text-center">
                     <button 
                       className="text-primary text-sm font-medium hover:underline cursor-pointer bg-transparent border-none outline-none" 
-                      onClick={() => setIsTicketsModalOpen(true)}
+                      onClick={() => navigate(`/workspaces/${id}/projects/${projectId}/tickets`)}
                     >
                       View All Priority Tickets ({renderedTickets.length})
                     </button>

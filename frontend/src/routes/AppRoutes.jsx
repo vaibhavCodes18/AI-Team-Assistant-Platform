@@ -14,6 +14,8 @@ import ProjectDetails from "../pages/project/ProjectDetails.jsx";
 
 import ProjectMembers from "../pages/project/ProjectMembers.jsx";
 import ProjectChat from "../pages/project/ProjectChat.jsx";
+import TicketList from "../pages/ticket/TicketList.jsx";
+import TaskList from "../pages/task/TaskList.jsx";
 
 const AppRoutes = () => {
   return (
@@ -85,6 +87,22 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <ProjectChat />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/workspaces/:id/projects/:projectId/tickets" 
+          element={
+            <ProtectedRoute>
+              <TicketList />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/workspaces/:id/projects/:projectId/tasks" 
+          element={
+            <ProtectedRoute>
+              <TaskList />
             </ProtectedRoute>
           } 
         />

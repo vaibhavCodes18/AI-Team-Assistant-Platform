@@ -1,10 +1,21 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { addTask, deleteTaskById, getProjectTasks, updateTask } from '../../api/taskApi';
 import { getProjectMembers } from '../../api/projectApi';
+import TaskActionMenu from '../task/TaskActionMenu';
+import TaskPreviewModal from '../task/TaskPreviewModal';
+import EditTaskModal from '../task/EditTaskModal';
+import DeleteTaskModal from '../task/DeleteTaskModal';
 
 const ProjectTasksCard = ({ projectId }) => {
+  const { id: paramWorkspaceId, projectId: paramProjectId } = useParams();
+  const navigate = useNavigate();
+
+  const activeProjectId = projectId || paramProjectId;
+  const activeWorkspaceId = paramWorkspaceId;
+
   const [tasks, setTasks] = useState([]);
   const [filter, setFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
@@ -13,6 +24,9 @@ const ProjectTasksCard = ({ projectId }) => {
   const [users, setUsers] = useState([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
+  const [selectedTaskForPreview, setSelectedTaskForPreview] = useState(null);
+  const [selectedTaskForEdit, setSelectedTaskForEdit] = useState(null);
+  const [selectedTaskForDelete, setSelectedTaskForDelete] = useState(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -30,13 +44,13 @@ const ProjectTasksCard = ({ projectId }) => {
     let isMounted = true;
 
     const loadData = async () => {
-      if (!projectId) return;
+      if (!activeProjectId) return;
       setLoading(true);
 
       try {
         const [membersRes, tasksRes] = await Promise.allSettled([
-          getProjectMembers(projectId),
-          getProjectTasks(projectId),
+          getProjectMembers(activeProjectId),
+          getProjectTasks(activeProjectId),
         ]);
 
         if (isMounted) {
@@ -61,7 +75,20 @@ const ProjectTasksCard = ({ projectId }) => {
     return () => {
       isMounted = false;
     };
-  }, [projectId]);
+  }, [activeProjectId]);
+
+  const reloadTasks = async () => {
+    try {
+      const res = await getProjectTasks(activeProjectId);
+      if (res?.data) {
+        setTasks(res.data);
+      } else if (Array.isArray(res)) {
+        setTasks(res);
+      }
+    } catch (err) {
+      console.error('Failed to reload tasks:', err);
+    }
+  };
 
   const toggleTaskStatus = async (task) => {
     const nextStatus = task.status === 'DONE' ? 'TODO' : 'DONE';
@@ -237,13 +264,25 @@ const ProjectTasksCard = ({ projectId }) => {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="bg-primary text-on-primary hover:bg-primary/90 px-3.5 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1.5 cursor-pointer border-none shadow-md hover:shadow-primary/20"
-        >
-          <span className="material-symbols-outlined text-base">add</span>
-          <span>Add Task</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {activeWorkspaceId && activeProjectId && (
+            <button
+              onClick={() => navigate(`/workspaces/${activeWorkspaceId}/projects/${activeProjectId}/tasks`)}
+              className="bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant text-on-surface px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer"
+              title="Open full page dedicated tasks view"
+            >
+              <span className="material-symbols-outlined text-base text-primary">open_in_new</span>
+              <span>View All Tasks ({totalCount})</span>
+            </button>
+          )}
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-primary text-on-primary hover:bg-primary/90 px-3.5 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1.5 cursor-pointer border-none shadow-md hover:shadow-primary/20"
+          >
+            <span className="material-symbols-outlined text-base">add</span>
+            <span>Add Task</span>
+          </button>
+        </div>
       </div>
 
       {/* Progress Bar */}
@@ -306,7 +345,10 @@ const ProjectTasksCard = ({ projectId }) => {
                     </span>
                   </button>
 
-                  <div className="min-w-0 flex-1">
+                  <div 
+                    className="min-w-0 flex-1 cursor-pointer group-hover/item:text-primary transition-colors"
+                    onClick={() => setSelectedTaskForPreview(task)}
+                  >
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className={`text-xs font-semibold ${isDone ? 'line-through text-on-surface-variant' : 'text-on-surface'}`}>
                         {task.title}
@@ -340,17 +382,13 @@ const ProjectTasksCard = ({ projectId }) => {
                   </div>
                 </div>
 
-                {/* Delete Button */}
-                <button
-                  onClick={() => handleDeleteTask(task)}
-                  disabled={isDeleting}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-on-surface-variant hover:text-error hover:bg-error-container/20 rounded transition-all cursor-pointer bg-transparent border-none shrink-0"
-                  title="Delete Task"
-                >
-                  <span className="material-symbols-outlined text-lg">
-                    {isDeleting ? 'hourglass_top' : 'delete'}
-                  </span>
-                </button>
+                {/* Task Action Menu (View, Edit, Delete) */}
+                <TaskActionMenu
+                  task={task}
+                  onPreview={(t) => setSelectedTaskForPreview(t)}
+                  onEdit={(t) => setSelectedTaskForEdit(t)}
+                  onDelete={(t) => setSelectedTaskForDelete(t)}
+                />
               </div>
             );
           })
@@ -362,6 +400,19 @@ const ProjectTasksCard = ({ projectId }) => {
           </div>
         )}
       </div>
+
+      {/* Footer link to full tasks page */}
+      {activeWorkspaceId && activeProjectId && (
+        <div className="p-3 bg-surface-container-lowest border-t border-outline-variant/30 text-center">
+          <button 
+            className="text-primary text-xs font-semibold hover:underline cursor-pointer bg-transparent border-none outline-none flex items-center justify-center gap-1 mx-auto" 
+            onClick={() => navigate(`/workspaces/${activeWorkspaceId}/projects/${activeProjectId}/tasks`)}
+          >
+            <span>View All Project Tasks ({totalCount})</span>
+            <span className="material-symbols-outlined text-sm">arrow_forward</span>
+          </button>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {taskToDelete &&
@@ -543,6 +594,38 @@ const ProjectTasksCard = ({ projectId }) => {
           </div>,
           document.body
         )}
+
+      {/* Task Preview Modal */}
+      {selectedTaskForPreview && (
+        <TaskPreviewModal
+          isOpen={!!selectedTaskForPreview}
+          onClose={() => setSelectedTaskForPreview(null)}
+          task={selectedTaskForPreview}
+          onEditClick={(t) => setSelectedTaskForEdit(t)}
+          onDeleteClick={(t) => setSelectedTaskForDelete(t)}
+        />
+      )}
+
+      {/* Edit Task Modal */}
+      {selectedTaskForEdit && (
+        <EditTaskModal
+          isOpen={!!selectedTaskForEdit}
+          onClose={() => setSelectedTaskForEdit(null)}
+          task={selectedTaskForEdit}
+          members={users}
+          onSuccess={reloadTasks}
+        />
+      )}
+
+      {/* Delete Task Modal */}
+      {selectedTaskForDelete && (
+        <DeleteTaskModal
+          isOpen={!!selectedTaskForDelete}
+          onClose={() => setSelectedTaskForDelete(null)}
+          task={selectedTaskForDelete}
+          onSuccess={reloadTasks}
+        />
+      )}
     </div>
   );
 };

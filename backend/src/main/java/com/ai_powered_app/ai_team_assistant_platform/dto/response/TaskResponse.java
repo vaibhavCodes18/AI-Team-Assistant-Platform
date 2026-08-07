@@ -30,16 +30,21 @@ public class TaskResponse {
     private LocalDate dueDate;
 
     private Long projectId;
+    private String projectName;
 
     private Long assignedUserId;
-    
     private String assignedUserName;
+    private String assignedUserEmail;
+    private String assignedUserProfileImage;
 
     private Long createdByUserId;
+    private String createdByName;
+    private String createdByEmail;
+    private String createdUserProfileImage;
+
     private Long ticketId;
+    private String ticketTitle;
 
     private LocalDateTime createdAt;
-
     private LocalDateTime updatedAt;
-
 }

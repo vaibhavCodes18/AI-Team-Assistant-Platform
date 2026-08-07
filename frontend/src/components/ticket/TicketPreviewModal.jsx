@@ -2,12 +2,35 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'react-hot-toast';
 import { getTicketById } from '../../api/ticketApi';
+import { getTicketTasks, updateTask } from '../../api/taskApi';
+import TaskActionMenu from '../task/TaskActionMenu';
+import TaskPreviewModal from '../task/TaskPreviewModal';
+import EditTaskModal from '../task/EditTaskModal';
+import DeleteTaskModal from '../task/DeleteTaskModal';
 
 const TicketPreviewModal = ({ isOpen, onClose, ticket, ticketId, canManageTickets, onEditClick, onDeleteClick }) => {
   const [ticketDetails, setTicketDetails] = useState(null);
+  const [ticketTasks, setTicketTasks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedTaskForPreview, setSelectedTaskForPreview] = useState(null);
+  const [selectedTaskForEdit, setSelectedTaskForEdit] = useState(null);
+  const [selectedTaskForDelete, setSelectedTaskForDelete] = useState(null);
 
   const activeTicketId = ticket?.id || ticketId;
+
+  const loadTicketTasks = async (tId) => {
+    if (!tId) return;
+    try {
+      const tasksRes = await getTicketTasks(tId);
+      if (tasksRes?.data) {
+        setTicketTasks(tasksRes.data);
+      } else if (Array.isArray(tasksRes)) {
+        setTicketTasks(tasksRes);
+      }
+    } catch (err) {
+      console.error('Failed to fetch ticket tasks:', err);
+    }
+  };
 
   useEffect(() => {
     const fetchTicketDetails = async () => {
@@ -15,9 +38,13 @@ const TicketPreviewModal = ({ isOpen, onClose, ticket, ticketId, canManageTicket
 
       try {
         setLoading(true);
-        const res = await getTicketById(activeTicketId);
-        if (res?.data) {
-          setTicketDetails(res.data);
+        const [res] = await Promise.allSettled([
+          getTicketById(activeTicketId),
+          loadTicketTasks(activeTicketId)
+        ]);
+
+        if (res.status === 'fulfilled' && res.value?.data) {
+          setTicketDetails(res.value.data);
         }
       } catch (error) {
         console.error('Failed to fetch ticket details:', error);
@@ -204,6 +231,46 @@ const TicketPreviewModal = ({ isOpen, onClose, ticket, ticketId, canManageTicket
               </div>
             </div>
           </div>
+
+          {/* Ticket Tasks Section */}
+          {ticketTasks.length > 0 && (
+            <div className="space-y-xs pt-md border-t border-outline-variant/40">
+              <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-sm text-primary">task</span>
+                Associated Tasks ({ticketTasks.length})
+              </h4>
+              <div className="space-y-2">
+                {ticketTasks.map((t) => (
+                  <div
+                    key={t.id}
+                    className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/60 flex items-center justify-between gap-3 hover:bg-surface-container-high/50 transition-colors"
+                  >
+                    <div
+                      className="min-w-0 flex-1 cursor-pointer"
+                      onClick={() => setSelectedTaskForPreview(t)}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-semibold text-on-surface">#{t.id} {t.title}</span>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                          {t.status}
+                        </span>
+                      </div>
+                      {t.assignedUserName && (
+                        <p className="text-xs text-on-surface-variant">Assignee: {t.assignedUserName}</p>
+                      )}
+                    </div>
+
+                    <TaskActionMenu
+                      task={t}
+                      onPreview={(taskObj) => setSelectedTaskForPreview(taskObj)}
+                      onEdit={(taskObj) => setSelectedTaskForEdit(taskObj)}
+                      onDelete={(taskObj) => setSelectedTaskForDelete(taskObj)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -243,6 +310,37 @@ const TicketPreviewModal = ({ isOpen, onClose, ticket, ticketId, canManageTicket
           </button>
         </div>
       </div>
+
+      {/* Task Preview Modal */}
+      {selectedTaskForPreview && (
+        <TaskPreviewModal
+          isOpen={!!selectedTaskForPreview}
+          onClose={() => setSelectedTaskForPreview(null)}
+          task={selectedTaskForPreview}
+          onEditClick={(t) => setSelectedTaskForEdit(t)}
+          onDeleteClick={(t) => setSelectedTaskForDelete(t)}
+        />
+      )}
+
+      {/* Edit Task Modal */}
+      {selectedTaskForEdit && (
+        <EditTaskModal
+          isOpen={!!selectedTaskForEdit}
+          onClose={() => setSelectedTaskForEdit(null)}
+          task={selectedTaskForEdit}
+          onSuccess={() => loadTicketTasks(activeTicketId)}
+        />
+      )}
+
+      {/* Delete Task Modal */}
+      {selectedTaskForDelete && (
+        <DeleteTaskModal
+          isOpen={!!selectedTaskForDelete}
+          onClose={() => setSelectedTaskForDelete(null)}
+          task={selectedTaskForDelete}
+          onSuccess={() => loadTicketTasks(activeTicketId)}
+        />
+      )}
     </div>,
     document.body
   );

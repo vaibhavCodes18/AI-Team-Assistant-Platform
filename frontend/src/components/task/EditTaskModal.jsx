@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'react-hot-toast';
-import { updateTicket } from '../../api/ticketApi';
+import { updateTask } from '../../api/taskApi';
 
-const EditTicketModal = ({ isOpen, onClose, ticket, onSuccess }) => {
+const EditTaskModal = ({ isOpen, onClose, task, members = [], onSuccess }) => {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: '',
     description: '',
-    type: 'FEATURE',
     priority: 'MEDIUM',
-    status: 'OPEN',
-    dueDate: ''
+    status: 'TODO',
+    dueDate: '',
+    assigneeId: ''
   });
 
   const formatDateForInput = (dateStr) => {
@@ -20,22 +20,22 @@ const EditTicketModal = ({ isOpen, onClose, ticket, onSuccess }) => {
   };
 
   useEffect(() => {
-    if (ticket && isOpen) {
+    if (task && isOpen) {
       setForm({
-        title: ticket.title || '',
-        description: ticket.description || '',
-        type: ticket.type || 'FEATURE',
-        priority: ticket.priority || 'MEDIUM',
-        status: ticket.status || 'OPEN',
-        dueDate: formatDateForInput(ticket.dueDate)
+        title: task.title || '',
+        description: task.description || '',
+        priority: task.priority || 'MEDIUM',
+        status: task.status || 'TODO',
+        dueDate: formatDateForInput(task.dueDate),
+        assigneeId: task.assignedUserId || task.assignee?.id || ''
       });
     }
-  }, [ticket, isOpen]);
+  }, [task, isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title.trim()) {
-      toast.error('Ticket title is required');
+      toast.error('Task title is required');
       return;
     }
 
@@ -44,30 +44,30 @@ const EditTicketModal = ({ isOpen, onClose, ticket, onSuccess }) => {
       const payload = {
         title: form.title.trim(),
         description: form.description.trim() || null,
-        type: form.type,
         priority: form.priority,
         status: form.status,
-        dueDate: form.dueDate || null
+        dueDate: form.dueDate || null,
+        assigneeId: form.assigneeId ? parseInt(form.assigneeId, 10) : -1
       };
 
-      const res = await updateTicket(ticket.id, payload);
+      const res = await updateTask(task.id, payload);
 
-      if (res?.data) {
-        toast.success('Ticket updated successfully!');
+      if (res?.data || res?.id) {
+        toast.success('Task updated successfully!');
         if (onSuccess) {
           await onSuccess();
         }
         onClose();
       }
     } catch (error) {
-      console.error('Failed to update ticket:', error);
-      toast.error(error.response?.data?.message || error.response?.data?.msg || 'Failed to update ticket');
+      console.error('Failed to update task:', error);
+      toast.error(error.response?.data?.message || error.response?.data?.msg || 'Failed to update task');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (!isOpen || !ticket) return null;
+  if (!isOpen || !task) return null;
 
   return createPortal(
     <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[9999] flex items-center justify-center p-md sm:p-lg">
@@ -77,14 +77,14 @@ const EditTicketModal = ({ isOpen, onClose, ticket, onSuccess }) => {
           <div className="space-y-1 min-w-0 pr-6 text-left">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs font-mono font-bold text-amber-400 px-2.5 py-0.5 bg-amber-400/10 rounded">
-                #TCK-{ticket.id}
+                #TSK-{task.id}
               </span>
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-primary/10 text-primary">
-                Edit Ticket
+                Edit Task
               </span>
             </div>
-            <h2 className="text-xl font-bold text-on-surface leading-snug">Edit Ticket #{ticket.id}</h2>
-            <p className="text-xs text-on-surface-variant">Update ticket title, description, status, priority, type, or due date.</p>
+            <h2 className="text-xl font-bold text-on-surface leading-snug">Edit Task #{task.id}</h2>
+            <p className="text-xs text-on-surface-variant">Update task title, description, status, priority, due date, or assignee.</p>
           </div>
 
           <button
@@ -101,16 +101,16 @@ const EditTicketModal = ({ isOpen, onClose, ticket, onSuccess }) => {
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden text-left">
           <div className="flex-1 overflow-y-auto p-lg space-y-md custom-scrollbar">
             <div className="space-y-xs">
-              <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="editTicketTitle">
+              <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="editTaskTitle">
                 Title *
               </label>
               <input
                 className="w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none"
-                id="editTicketTitle"
+                id="editTaskTitle"
                 type="text"
                 required
                 maxLength={150}
-                placeholder="e.g. SSL Handshake Timeout"
+                placeholder="e.g. Configure SSL Certificate & OAuth setup"
                 value={form.title}
                 onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
                 disabled={submitting}
@@ -118,14 +118,14 @@ const EditTicketModal = ({ isOpen, onClose, ticket, onSuccess }) => {
             </div>
 
             <div className="space-y-xs">
-              <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="editTicketDescription">
+              <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="editTaskDescription">
                 Description
               </label>
               <textarea
                 className="w-full p-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none resize-none h-32"
-                id="editTicketDescription"
-                maxLength={1000}
-                placeholder="Describe the issue or feature request in detail..."
+                id="editTaskDescription"
+                maxLength={5000}
+                placeholder="Provide detailed description, acceptance criteria, or context..."
                 value={form.description}
                 onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
                 disabled={submitting}
@@ -134,31 +134,30 @@ const EditTicketModal = ({ isOpen, onClose, ticket, onSuccess }) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
               <div className="space-y-xs">
-                <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="editTicketType">
-                  Type *
+                <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="editTaskStatus">
+                  Status *
                 </label>
                 <select
                   className="w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
-                  id="editTicketType"
-                  value={form.type}
-                  onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value }))}
+                  id="editTaskStatus"
+                  value={form.status}
+                  onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
                   disabled={submitting}
                 >
-                  <option value="BUG" className="bg-[#191b23] text-on-surface">Bug</option>
-                  <option value="FEATURE" className="bg-[#191b23] text-on-surface">Feature</option>
-                  <option value="IMPROVEMENT" className="bg-[#191b23] text-on-surface">Improvement</option>
-                  <option value="SUPPORT" className="bg-[#191b23] text-on-surface">Support</option>
-                  <option value="DOCUMENTATION" className="bg-[#191b23] text-on-surface">Documentation</option>
+                  <option value="TODO" className="bg-[#191b23] text-on-surface">To Do</option>
+                  <option value="IN_PROGRESS" className="bg-[#191b23] text-on-surface">In Progress</option>
+                  <option value="IN_REVIEW" className="bg-[#191b23] text-on-surface">In Review</option>
+                  <option value="DONE" className="bg-[#191b23] text-on-surface">Done</option>
                 </select>
               </div>
 
               <div className="space-y-xs">
-                <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="editTicketPriority">
+                <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="editTaskPriority">
                   Priority *
                 </label>
                 <select
                   className="w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
-                  id="editTicketPriority"
+                  id="editTaskPriority"
                   value={form.priority}
                   onChange={(e) => setForm((prev) => ({ ...prev, priority: e.target.value }))}
                   disabled={submitting}
@@ -173,35 +172,42 @@ const EditTicketModal = ({ isOpen, onClose, ticket, onSuccess }) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
               <div className="space-y-xs">
-                <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="editTicketStatus">
-                  Status *
-                </label>
-                <select
-                  className="w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
-                  id="editTicketStatus"
-                  value={form.status}
-                  onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
-                  disabled={submitting}
-                >
-                  <option value="OPEN" className="bg-[#191b23] text-on-surface">Open</option>
-                  <option value="IN_PROGRESS" className="bg-[#191b23] text-on-surface">In Progress</option>
-                  <option value="RESOLVED" className="bg-[#191b23] text-on-surface">Resolved</option>
-                  <option value="CLOSED" className="bg-[#191b23] text-on-surface">Closed</option>
-                </select>
-              </div>
-
-              <div className="space-y-xs">
-                <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="editTicketDueDate">
+                <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="editTaskDueDate">
                   Due Date
                 </label>
                 <input
                   className="w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
-                  id="editTicketDueDate"
+                  id="editTaskDueDate"
                   type="date"
                   value={form.dueDate}
                   onChange={(e) => setForm((prev) => ({ ...prev, dueDate: e.target.value }))}
                   disabled={submitting}
                 />
+              </div>
+
+              <div className="space-y-xs">
+                <label className="font-label-sm text-on-surface-variant block ml-xs font-semibold" htmlFor="editTaskAssignee">
+                  Assignee
+                </label>
+                <select
+                  className="w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-body-md focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
+                  id="editTaskAssignee"
+                  value={form.assigneeId}
+                  onChange={(e) => setForm((prev) => ({ ...prev, assigneeId: e.target.value }))}
+                  disabled={submitting}
+                >
+                  <option value="" className="bg-[#191b23] text-on-surface">Unassigned</option>
+                  {members.map((u) => {
+                    const userId = u.user?.id || u.id;
+                    const userName = u.user?.name || u.name || 'Member';
+                    const userEmail = (u.user?.email || u.email) ? ` (${u.user?.email || u.email})` : '';
+                    return (
+                      <option key={userId} value={userId} className="bg-[#191b23] text-on-surface">
+                        {userName}{userEmail}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             </div>
           </div>
@@ -231,4 +237,4 @@ const EditTicketModal = ({ isOpen, onClose, ticket, onSuccess }) => {
   );
 };
 
-export default EditTicketModal;
+export default EditTaskModal;
