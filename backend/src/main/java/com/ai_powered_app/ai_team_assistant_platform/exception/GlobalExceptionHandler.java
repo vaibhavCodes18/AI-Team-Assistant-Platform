@@ -29,6 +29,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
     }
 
+    @ExceptionHandler(PasswordResetTokenException.class)
+    public ResponseEntity<ErrorResponse> handlePasswordToken(PasswordResetTokenException ex) {
+        log.error("Password reset token processing failed", ex);
+
+        ErrorResponse response = new ErrorResponse(
+                500,
+                "Unable to process password reset request",
+                LocalDateTime.now()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(response);
+    }
+
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ErrorResponse> handleDuplicate(DuplicateResourceException ex) {
         log.warn("Duplicate resource conflict: {}", ex.getMessage());
