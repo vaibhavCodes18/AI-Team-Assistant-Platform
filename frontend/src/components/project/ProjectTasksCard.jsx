@@ -391,7 +391,7 @@ const ProjectTasksCard = ({ projectId }) => {
                 />
               </div>
             );
-          }
+          })
         ) : (
           <div className="flex flex-col items-center justify-center p-8 text-center min-h-[200px]">
             <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-2">task_alt</span>
