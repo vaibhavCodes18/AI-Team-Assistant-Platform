@@ -13,7 +13,6 @@ public class RootController {
     public ResponseEntity<Map<String, String>> healthCheck() {
         return ResponseEntity.ok(Map.of(
                 "status", "success",
-                "message", "AI Team Assistant Platform Server is running successfully!"
-        ));
+                "message", "TeamPilot - AI-Powered Team Collaboration Platform Server is running successfully!"));
     }
 }

@@ -25,7 +25,7 @@ const Sidebar = () => {
                 auto_awesome
               </span>
             </div>
-            <span className="font-headline-md text-headline-md font-bold text-on-surface">AI Team Hub</span>
+            <span className="font-headline-md text-headline-md font-bold text-on-surface">TeamPilot</span>
           </div>
           <p className="text-on-surface-variant font-label-sm text-label-sm ml-11">Enterprise Plan</p>
         </div>

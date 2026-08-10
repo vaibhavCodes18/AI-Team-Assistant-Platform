@@ -139,7 +139,7 @@ const Register = () => {
                   auto_awesome
                 </span>
               </div>
-              <h1 className="font-headline-md text-headline-md tracking-tight">AI Team Hub</h1>
+              <h1 className="font-headline-md text-headline-md tracking-tight">TeamPilot</h1>
             </div>
             <h2 className="font-headline-lg text-headline-lg mb-xs">Create your account</h2>
             <p className="font-body-md text-on-surface-variant">Start collaborating with intelligent workflows today.</p>

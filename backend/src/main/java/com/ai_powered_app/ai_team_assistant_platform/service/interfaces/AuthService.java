@@ -1,6 +1,8 @@
 package com.ai_powered_app.ai_team_assistant_platform.service.interfaces;
 
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.ForgotPasswordRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.LoginRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.ResetPasswordRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.UserRegistrationRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TokenResfreshResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserLoginResponse;
@@ -22,4 +24,8 @@ public interface AuthService {
     UserResponse getCurrentUser();
     
     UserResponse updateCurrentUser(com.ai_powered_app.ai_team_assistant_platform.dto.request.UserUpdateRequest request);
+
+    void forgotPassword(ForgotPasswordRequest request);
+
+    void resetPassword(ResetPasswordRequest passwordRequest);
 }

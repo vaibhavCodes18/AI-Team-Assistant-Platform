@@ -1,6 +1,8 @@
 package com.ai_powered_app.ai_team_assistant_platform.controller;
 
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.ForgotPasswordRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.LoginRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.ResetPasswordRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.UserRegistrationRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TokenResfreshResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserLoginResponse;
@@ -90,6 +92,22 @@ public class AuthController {
     public ResponseEntity<ApiResponse<UserResponse>> profile(){
         UserResponse userResponse = authService.getCurrentUser();
         ApiResponse<UserResponse> res = new ApiResponse<>(200, "User successfully fetched", userResponse);
+
+        return ResponseEntity.status(HttpStatus.OK).body(res);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotpassword(@Valid @RequestBody ForgotPasswordRequest emailRequest){
+        authService.forgotPassword(emailRequest);
+        ApiResponse<Void> res = new ApiResponse<>(200, "Password reset link has been sent to your email.", null);
+
+        return ResponseEntity.status(HttpStatus.OK).body(res);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetpassword(@Valid @RequestBody ResetPasswordRequest emailRequest){
+        authService.resetPassword(emailRequest);
+        ApiResponse<Void> res = new ApiResponse<>(200, "Password reset successfully", null);
 
         return ResponseEntity.status(HttpStatus.OK).body(res);
     }

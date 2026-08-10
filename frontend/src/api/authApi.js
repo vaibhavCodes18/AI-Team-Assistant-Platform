@@ -30,3 +30,19 @@ export const updateUserProfile = async (profileData) => {
   const response = await api.put("/v1/auth/profile", profileData);
   return response.data;
 };
+
+export const forgotPassword = async (data) => {
+  const payload = typeof data === 'string' ? { email: data } : data;
+  console.log(payload);
+  
+  const response = await api.post("/v1/auth/forgot-password", payload);
+  return response.data;
+};
+
+export const resetPassword = async (resetData) => {
+  console.log(resetData);
+  
+  const response = await api.post("/v1/auth/reset-password", resetData);
+  return response.data;
+};
+

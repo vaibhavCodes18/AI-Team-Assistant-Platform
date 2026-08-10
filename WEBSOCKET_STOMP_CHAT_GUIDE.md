@@ -1,6 +1,6 @@
 # Complete Real-Time Chat Guide: WebSocket, STOMP & SockJS Integration
 
-This document provides an end-to-end technical explanation and architectural blueprint of the real-time chat collaboration system implemented in the **AI Team Assistant Platform**. It covers why each technology was chosen, how Spring Boot backend handles broker routing and persistence, how the React frontend integrates STOMP with SockJS, and the exact step-by-step data flow.
+This document provides an end-to-end technical explanation and architectural blueprint of the real-time chat collaboration system implemented in the **TeamPilot - AI-Powered Team Collaboration Platform**. It covers why each technology was chosen, how Spring Boot backend handles broker routing and persistence, how the React frontend integrates STOMP with SockJS, and the exact step-by-step data flow.
 
 ---
 
@@ -24,16 +24,19 @@ Building an enterprise-grade real-time chat app requires a robust, scalable arch
 ```
 
 ### A. WebSockets
-* **What it is**: A persistent, full-duplex TCP connection established via an initial HTTP Upgrade handshake.
-* **Why we use it**: Standard HTTP requires the client to repeatedly ask the server for updates (HTTP Polling), which introduces high network overhead and latency. WebSockets allow the server to push messages to the client instantly over a single open TCP connection.
+
+- **What it is**: A persistent, full-duplex TCP connection established via an initial HTTP Upgrade handshake.
+- **Why we use it**: Standard HTTP requires the client to repeatedly ask the server for updates (HTTP Polling), which introduces high network overhead and latency. WebSockets allow the server to push messages to the client instantly over a single open TCP connection.
 
 ### B. SockJS
-* **What it is**: A browser JavaScript library and server-side fallback mechanism.
-* **Why we use it**: Some corporate proxies, firewalls, or legacy networks block raw WebSocket TCP upgrade requests. SockJS provides a WebSocket-like API that automatically falls back to HTTP Streaming or HTTP Long-Polling if raw WebSocket connections fail.
+
+- **What it is**: A browser JavaScript library and server-side fallback mechanism.
+- **Why we use it**: Some corporate proxies, firewalls, or legacy networks block raw WebSocket TCP upgrade requests. SockJS provides a WebSocket-like API that automatically falls back to HTTP Streaming or HTTP Long-Polling if raw WebSocket connections fail.
 
 ### C. STOMP (Simple Text Oriented Messaging Protocol)
-* **What it is**: A simple frame-based messaging sub-protocol layered on top of WebSockets (or SockJS).
-* **Why we use it**: Raw WebSockets are just an empty transport pipe for bytes/strings without built-in routing concepts. STOMP introduces standardized frames (`CONNECT`, `SUBSCRIBE`, `SEND`, `MESSAGE`) and pub/sub topic destinations (e.g., `/topic/projects/12` and `/app/projects/12/send`), making message routing clean and structured.
+
+- **What it is**: A simple frame-based messaging sub-protocol layered on top of WebSockets (or SockJS).
+- **Why we use it**: Raw WebSockets are just an empty transport pipe for bytes/strings without built-in routing concepts. STOMP introduces standardized frames (`CONNECT`, `SUBSCRIBE`, `SEND`, `MESSAGE`) and pub/sub topic destinations (e.g., `/topic/projects/12` and `/app/projects/12/send`), making message routing clean and structured.
 
 ---
 
@@ -89,7 +92,7 @@ import lombok.RequiredArgsConstructor;
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-    
+
     private final WebSocketAuthInterceptor webSocketAuthInterceptor;
 
     @Override
@@ -104,7 +107,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         // Topic prefix for server-to-client broadcasts
         registry.enableSimpleBroker("/topic");
-        
+
         // Application prefix for client-to-server message destinations
         registry.setApplicationDestinationPrefixes("/app");
     }
@@ -202,7 +205,7 @@ public class ChatHistoryController {
 
     @GetMapping("/project/{projectId}")
     public ResponseEntity<PagedResponse<ChatMessageResponse>> getProjectMessages(
-            @PathVariable("projectId") Long projectId, 
+            @PathVariable("projectId") Long projectId,
             Pageable pageable
     ) {
         PagedResponse<ChatMessageResponse> response = chatService.getProjectMessages(projectId, pageable);
@@ -324,7 +327,8 @@ export default useChat;
 ## 5. Key Frontend Solutions Implemented
 
 ### 5.1 Deduplicating Messages (Preventing Double Render)
-When sending a message over STOMP, the Spring Boot backend broadcasts the saved `ChatMessageResponse` to `/topic/projects/{projectId}`. Both the sender and recipient receive this broadcast. 
+
+When sending a message over STOMP, the Spring Boot backend broadcasts the saved `ChatMessageResponse` to `/topic/projects/{projectId}`. Both the sender and recipient receive this broadcast.
 
 To prevent rendering the same message twice, incoming socket messages are filtered by message ID before being appended:
 
@@ -346,6 +350,7 @@ useEffect(() => {
 ```
 
 ### 5.2 Top-Scroll Infinite Pagination & Scroll Preservation
+
 When the user scrolls to the top of the chat container (`scrollTop <= 30`), page `page + 1` is fetched from `GET /api/v1/chat/project/{projectId}?page={page}&size=10`.
 
 Because backend pagination returns newest messages first in the content array, the array is reversed (older to newer) and prepended. To prevent the scrollbar from jumping abruptly, the previous container `scrollHeight` is saved and restored after DOM update:
@@ -365,7 +370,9 @@ const loadMoreMessages = async () => {
 
     if (data && data.content && data.content.length > 0) {
       const chronological = [...data.content].reverse();
-      const mappedOlder = chronological.map((msg) => mapApiMessage(msg, user?.id));
+      const mappedOlder = chronological.map((msg) =>
+        mapApiMessage(msg, user?.id),
+      );
 
       setMessages((prev) => deduplicateMessages([...mappedOlder, ...prev]));
       setPage(nextPage);
@@ -385,6 +392,7 @@ const loadMoreMessages = async () => {
 ```
 
 ### 5.3 User Message Alignment (Right vs. Left)
+
 Messages sent by the authenticated logged-in user (`msg.senderId === user?.id`) are aligned to the **right side** using Tailwind CSS flex utilities:
 
 ```jsx
@@ -399,11 +407,13 @@ return (
   >
     <img className="w-10 h-10 rounded-lg object-cover" src={msg.senderAvatar} />
     <div className={`space-y-1.5 ${isSelf ? "flex flex-col items-end" : ""}`}>
-      <div className={`p-3.5 rounded-2xl border ${
-        isSelf
-          ? "bg-primary-container text-on-primary-container rounded-tr-none"
-          : "bg-surface-container-high text-on-surface rounded-tl-none"
-      }`}>
+      <div
+        className={`p-3.5 rounded-2xl border ${
+          isSelf
+            ? "bg-primary-container text-on-primary-container rounded-tr-none"
+            : "bg-surface-container-high text-on-surface rounded-tl-none"
+        }`}
+      >
         <p>{msg.content}</p>
       </div>
     </div>

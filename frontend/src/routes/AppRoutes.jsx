@@ -3,6 +3,8 @@ import { Toaster } from "react-hot-toast";
 import LandingPage from "../pages/Landing/LandingPage.jsx";
 import Register from "../pages/Register/Register.jsx";
 import Login from "../pages/Login/Login.jsx";
+import ForgotPassword from "../pages/ForgotPassword/ForgotPassword.jsx";
+import ResetPassword from "../pages/ResetPassword/ResetPassword.jsx";
 import OAuth2Success from "../pages/Login/OAuth2Success.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import Profile from "../pages/profile/Profile.jsx";
@@ -25,6 +27,8 @@ const AppRoutes = () => {
         <Route path="/" element={<LandingPage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/oauth2/success" element={<OAuth2Success />} />
         <Route 
           path="/profile" 
