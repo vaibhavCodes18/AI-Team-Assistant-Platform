@@ -21,7 +21,7 @@ import {
 
 // Simulated terminal sequence (no Kafka or Redis)
 const terminalLines = [
-  { text: "guest@ai-assistant:~$ assistant doc --generate", delay: 800 },
+  { text: "guest@teampilot:~$ teampilot doc --generate", delay: 800 },
   { text: "🛰️ Scanning project directory for controllers...", delay: 1800 },
   { text: "📝 Found: DocumentController.java, WorkspaceController.java", delay: 2800 },
   { text: "⚙️ Spawning background analysis worker threads...", delay: 4000 },
@@ -131,10 +131,10 @@ const LandingPage = () => {
             </div>
             <div>
               <span className="font-bold text-xl tracking-tight text-white group-hover:text-violet-400 transition-colors">
-                AI Team Assistant
+                TeamPilot
               </span>
               <span className="block text-[10px] text-slate-400 font-medium tracking-wide">
-                COLLABORATION PLATFORM
+                AI-POWERED TEAM COLLABORATION PLATFORM
               </span>
             </div>
           </Link>
@@ -198,14 +198,14 @@ const LandingPage = () => {
             </div>
 
             <h1 className="text-5xl md:text-6xl xl:text-7xl font-extrabold leading-[1.1] tracking-tight text-white mb-6">
-              AI Team Assistant
+              TeamPilot
               <span className="block mt-2 bg-gradient-to-r from-violet-400 via-purple-300 to-fuchsia-400 bg-clip-text text-transparent shimmer-text">
-                Collaboration Platform
+                AI-Powered Team Collaboration Platform
               </span>
             </h1>
 
             <p className="text-lg text-slate-400 leading-relaxed mb-10 max-w-2xl">
-              AI Team Assistant Platform is a multi-workspace collaboration and project management platform that helps software teams manage projects, tickets, and technical documents with AI-powered document summarization and automatic API documentation generation, similar to Jira.
+              TeamPilot - AI-Powered Team Collaboration Platform is a multi-workspace collaboration and project management platform that helps software teams manage projects, tickets, and technical documents with AI-powered document summarization and automatic API documentation generation, similar to Jira.
             </p>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
@@ -251,7 +251,7 @@ const LandingPage = () => {
                   <span className="h-3.5 w-3.5 rounded-full bg-green-500/90 shadow-inner"></span>
                 </div>
                 <div className="text-xs text-slate-500 font-semibold select-none flex items-center gap-2">
-                  <LuTerminal className="text-slate-600" /> ai-team-assistant-cli
+                  <LuTerminal className="text-slate-600" /> teampilot-cli
                 </div>
                 <div className="w-12"></div> {/* Spacer */}
               </div>
@@ -507,7 +507,7 @@ const LandingPage = () => {
                         <div className="bg-slate-950 p-4 rounded-xl border border-slate-900/60 font-mono text-[10px] text-slate-300 h-44 overflow-y-auto custom-scrollbar leading-relaxed">
                           <span className="text-violet-400">openapi</span>: <span className="text-amber-400">3.0.0</span><br/>
                           <span className="text-violet-400">info</span>:<br/>
-                          &nbsp;&nbsp;<span className="text-violet-400">title</span>: <span className="text-green-400">"AI Assistant API"</span><br/>
+                          &nbsp;&nbsp;<span className="text-violet-400">title</span>: <span className="text-green-400">"TeamPilot API"</span><br/>
                           <span className="text-violet-400">paths</span>:<br/>
                           &nbsp;&nbsp;<span className="text-violet-400">/api/v1/docs/upload</span>:<br/>
                           &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-violet-400">post</span>:<br/>
@@ -541,7 +541,7 @@ const LandingPage = () => {
             </div>
 
             <h2 className="text-3xl md:text-5xl font-extrabold text-white leading-tight mb-6">
-              Ready to Accelerate With <br />AI Team Assistant Platform?
+              Ready to Accelerate With <br />TeamPilot - AI-Powered Team Collaboration Platform?
             </h2>
 
             <p className="text-slate-400 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-10">
@@ -576,7 +576,7 @@ const LandingPage = () => {
                 <div className="w-8 h-8 bg-gradient-to-tr from-violet-600 to-fuchsia-500 rounded-lg flex items-center justify-center">
                   <LuSparkles className="text-white text-sm" />
                 </div>
-                <span className="font-bold text-lg text-white">AI Team Assistant</span>
+                <span className="font-bold text-lg text-white">TeamPilot</span>
               </div>
               <p className="text-sm text-slate-400 leading-relaxed max-w-sm mb-6">
                 The next-generation intelligence layer for high-performance developer and product organizations.
@@ -629,7 +629,7 @@ const LandingPage = () => {
 
           <div className="pt-8 border-t border-slate-900 flex flex-col md:flex-row items-center justify-between gap-6 text-left">
             <p className="text-xs text-slate-500">
-              © {new Date().getFullYear()} AI Team Assistant Platform. All rights reserved.
+              © {new Date().getFullYear()} TeamPilot - AI-Powered Team Collaboration Platform. All rights reserved.
             </p>
             
             <div className="flex items-center gap-2.5 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-full">

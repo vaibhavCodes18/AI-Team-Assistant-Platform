@@ -1,28 +1,37 @@
 package com.ai_powered_app.ai_team_assistant_platform.service.impl;
 
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.ForgotPasswordRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.LoginRequest;
+import com.ai_powered_app.ai_team_assistant_platform.dto.request.ResetPasswordRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.request.UserRegistrationRequest;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TokenResfreshResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserLoginResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
+import com.ai_powered_app.ai_team_assistant_platform.email.interfaces.EmailService;
+import com.ai_powered_app.ai_team_assistant_platform.entity.PasswordResetToken;
 import com.ai_powered_app.ai_team_assistant_platform.entity.RefreshToken;
 import com.ai_powered_app.ai_team_assistant_platform.entity.User;
 import com.ai_powered_app.ai_team_assistant_platform.enums.AuthProvider;
 import com.ai_powered_app.ai_team_assistant_platform.enums.PlatformRole;
 import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.DuplicateResourceException;
+import com.ai_powered_app.ai_team_assistant_platform.exception.PasswordResetTokenException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
 import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.JwtBlacklistService;
 import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.UserRedisService;
+import com.ai_powered_app.ai_team_assistant_platform.repository.PasswordResetTokenRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.RefreshTokenRepository;
 import com.ai_powered_app.ai_team_assistant_platform.repository.UserRepository;
 import com.ai_powered_app.ai_team_assistant_platform.security.CustomUserDetails;
 import com.ai_powered_app.ai_team_assistant_platform.security.JWTService;
 import com.ai_powered_app.ai_team_assistant_platform.service.interfaces.AuthService;
-import com.ai_powered_app.ai_team_assistant_platform.utils.AuthUtil;
 import com.ai_powered_app.ai_team_assistant_platform.utils.CalculateRemainingTime;
+import com.ai_powered_app.ai_team_assistant_platform.utils.PasswordResetTokenUtil;
+
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -44,6 +54,9 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRedisService redisService;
     private final JwtBlacklistService jwtBlacklistService;
+    private final PasswordResetTokenUtil passwordResetTokenUtil;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailService emailService;
 
     public AuthServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
@@ -52,7 +65,9 @@ public class AuthServiceImpl implements AuthService {
                            RefreshTokenRepository refreshTokenRepository,
                            UserRedisService redisService,
                            JwtBlacklistService jwtBlacklistService,
-                           AuthUtil authUtil) {
+                           PasswordResetTokenUtil passwordResetTokenUtil,
+                           PasswordResetTokenRepository passwordResetTokenRepository, 
+                           EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
@@ -60,6 +75,9 @@ public class AuthServiceImpl implements AuthService {
         this.refreshTokenRepository = refreshTokenRepository;
         this.redisService = redisService;
         this.jwtBlacklistService = jwtBlacklistService;
+        this.passwordResetTokenUtil = passwordResetTokenUtil;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.emailService = emailService;
     }
 
 
@@ -230,6 +248,56 @@ public class AuthServiceImpl implements AuthService {
         redisService.saveRedisUser(savedUser.getId(), response, Duration.ofMinutes(10L));
 
         return response;
+    }
+
+    @Override
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("If an account exists for this email, you will receive a password reset link."));
+
+        passwordResetTokenRepository.invalidatePreviousTokens(user.getId());
+
+        String rawToken = passwordResetTokenUtil.generateToken();
+        String tokenHash = passwordResetTokenUtil.hashToken(rawToken);
+
+        PasswordResetToken passwordResetToken = new PasswordResetToken();
+        passwordResetToken.setUser(user);
+        passwordResetToken.setTokenHash(tokenHash);
+        passwordResetToken.setExpiresAt(LocalDateTime.now().plusMinutes(15));
+        passwordResetToken.setIsUsed(false);
+        passwordResetTokenRepository.save(passwordResetToken);
+
+        String resetUrl = "http://localhost:5173/reset-password?token=" + rawToken;
+
+        log.info("Sending password reset email to user ID: {}, email: {}", user.getId(), user.getEmail());
+        emailService.sendResetPasswordEmail(user.getEmail(), resetUrl, user.getName());
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest passwordRequest){
+        String tokenHash = passwordResetTokenUtil.hashToken(passwordRequest.getToken());
+        
+        PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByTokenHashAndIsUsedFalse(tokenHash).orElseThrow(() -> new ResourceNotFoundException("Invalid token"));
+
+        if(passwordResetToken.getIsUsed()){
+            throw new PasswordResetTokenException("Invalid token");
+        }
+
+        if(passwordResetToken.getExpiresAt().isBefore(LocalDateTime.now())){
+            throw new PasswordResetTokenException("Invalid or expired token");
+        }
+
+        User user = passwordResetToken.getUser();
+
+        user.setPassword(passwordEncoder.encode(passwordRequest.getNewPassword()));
+        userRepository.save(user);
+
+        passwordResetToken.setIsUsed(true);
+        passwordResetTokenRepository.save(passwordResetToken);
+
+        emailService.sendResetPasswordConfirmationEmail(user.getEmail(), user.getName());
     }
 
     private static UserResponse getUserResponse(User savedUser) {

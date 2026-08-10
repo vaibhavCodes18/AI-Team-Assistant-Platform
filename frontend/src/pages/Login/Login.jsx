@@ -134,7 +134,8 @@ const Login = () => {
               auto_awesome
             </span>
           </div>
-          <h1 className="font-headline-md text-headline-md text-on-surface tracking-tight">AI Team Hub</h1>
+          <h1 className="font-headline-md text-headline-md text-on-surface tracking-tight">TeamPilot</h1>
+          <span className="text-xs text-on-surface-variant font-medium tracking-wide uppercase">AI-Powered Team Collaboration Platform</span>
         </div>
 
         {/* Login Card */}
@@ -180,16 +181,12 @@ const Login = () => {
                 <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider" htmlFor="password">
                   Password
                 </label>
-                <a 
+                <Link 
                   className="font-label-sm text-label-sm text-primary hover:underline transition-all" 
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    toast.success('Forgot password logic simulated!');
-                  }}
+                  to="/forgot-password"
                 >
                   Forgot password?
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <span 
