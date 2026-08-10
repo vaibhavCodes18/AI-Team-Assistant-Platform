@@ -1,1 +1,1 @@
-# AI Team Assistant Platform
+# TeamPilot - AI-Powered Team Collaboration Platform
