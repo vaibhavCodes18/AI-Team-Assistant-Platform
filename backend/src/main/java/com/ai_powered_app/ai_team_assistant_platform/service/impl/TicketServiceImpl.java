@@ -257,9 +257,20 @@ public class TicketServiceImpl implements TicketService {
             throw new BadCredentialsException("You do not have permission to delete this ticket");
         }
 
-        ticket.setProject(null);
-        ticketRepository.save(ticket);
-        ticketRepository.deleteById(ticketId);
+        // Delete associated ChatRoom and its ChatMessages
+        chatRoomRepository.findByTicketId(ticketId).ifPresent(chatRoomRepository::delete);
+
+        // Disassociate tasks from this ticket and ensure they belong to the project
+        List<Task> tasks = taskRepository.findByTicketIdOrderByUpdatedAtDesc(ticketId);
+        for (Task t : tasks) {
+            t.setTicket(null);
+            if (t.getProject() == null) {
+                t.setProject(project);
+            }
+        }
+        taskRepository.saveAll(tasks);
+
+        ticketRepository.delete(ticket);
 
         ActivityLog activityLog = new ActivityLog();
         activityLog.setWorkspace(project.getWorkspace());
