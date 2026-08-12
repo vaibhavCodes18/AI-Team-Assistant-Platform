@@ -1,7 +1,5 @@
 package com.ai_powered_app.ai_team_assistant_platform.kafka.config;
 
-import com.ai_powered_app.ai_team_assistant_platform.kafka.event.DocumentUploadedEvent;
-import com.ai_powered_app.ai_team_assistant_platform.kafka.event.TicketCreatedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -22,144 +20,106 @@ import java.util.Map;
 @Configuration
 public class KafkaConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
+        @Value("${spring.kafka.bootstrap-servers}")
+        private String bootstrapServers;
 
-    // =========================
-    // Producer Configuration
-    // =========================
+        // =========================
+        // Producer Configuration
+        // =========================
 
-    @Bean
-    public ProducerFactory<String, Object> producerFactory() {
+        @Bean
+        public ProducerFactory<String, Object> producerFactory() {
 
-        Map<String, Object> config = new HashMap<>();
+                Map<String, Object> config = new HashMap<>();
 
-        config.put(
-                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                bootstrapServers
-        );
+                config.put(
+                                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                                bootstrapServers);
 
-        config.put(
-                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-                StringSerializer.class
-        );
+                config.put(
+                                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                                StringSerializer.class);
 
-        config.put(
-                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-                JsonSerializer.class
-        );
+                config.put(
+                                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                                JsonSerializer.class);
 
-        return new DefaultKafkaProducerFactory<>(config);
-    }
+                return new DefaultKafkaProducerFactory<>(config);
+        }
 
-    @Bean
-    public KafkaTemplate<String, Object> kafkaTemplate() {
-        return new KafkaTemplate<>(producerFactory());
-    }
+        @Bean
+        public KafkaTemplate<String, Object> kafkaTemplate() {
+                return new KafkaTemplate<>(producerFactory());
+        }
 
-    // =========================
-    // Ticket Consumer
-    // =========================
+        // =========================
+        // Generic Consumer
+        // =========================
 
-    @Bean
-    public ConsumerFactory<String, TicketCreatedEvent> ticketConsumerFactory() {
+        @Bean
+        public ConsumerFactory<String, Object> consumerFactory() {
 
-        JsonDeserializer<TicketCreatedEvent> deserializer =
-                new JsonDeserializer<>(TicketCreatedEvent.class);
+                JsonDeserializer<Object> deserializer = new JsonDeserializer<>();
 
-        deserializer.addTrustedPackages("*");
+                deserializer.addTrustedPackages("com.ai_powered_app.ai_team_assistant_platform.kafka.event");
 
-        Map<String, Object> config = new HashMap<>();
+                Map<String, Object> config = new HashMap<>();
 
-        config.put(
-                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                bootstrapServers
-        );
+                config.put(
+                                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                                bootstrapServers);
 
-        config.put(
-                ConsumerConfig.GROUP_ID_CONFIG,
-                "ticket-group"
-        );
+                config.put(
+                                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
+                                "earliest");
 
-        config.put(
-                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
-                "earliest"
-        );
+                return new DefaultKafkaConsumerFactory<>(
+                                config,
+                                new StringDeserializer(),
+                                deserializer);
+        }
 
-        return new DefaultKafkaConsumerFactory<>(
-                config,
-                new StringDeserializer(),
-                deserializer
-        );
-    }
+        @Bean
+        public ConcurrentKafkaListenerContainerFactory<String, Object> ticketKafkaListenerContainerFactory() {
 
-    @Bean
-    public ConcurrentKafkaListenerContainerFactory<
-            String,
-            TicketCreatedEvent> ticketKafkaListenerContainerFactory() {
+                ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
 
-        ConcurrentKafkaListenerContainerFactory<
-                String,
-                TicketCreatedEvent> factory =
-                new ConcurrentKafkaListenerContainerFactory<>();
+                factory.setConsumerFactory(
+                                consumerFactory());
 
-        factory.setConsumerFactory(
-                ticketConsumerFactory()
-        );
+                return factory;
+        }
 
-        return factory;
-    }
+        @Bean
+        public ConcurrentKafkaListenerContainerFactory<String, Object> documentKafkaListenerContainerFactory() {
 
-    // =========================
-    // Document Consumer
-    // =========================
+                ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
 
-    @Bean
-    public ConsumerFactory<String, DocumentUploadedEvent> documentConsumerFactory() {
+                factory.setConsumerFactory(
+                                consumerFactory());
 
-        JsonDeserializer<DocumentUploadedEvent> deserializer =
-                new JsonDeserializer<>(DocumentUploadedEvent.class);
+                return factory;
+        }
 
-        deserializer.addTrustedPackages("*");
+        @Bean
+        public ConcurrentKafkaListenerContainerFactory<String, Object> passwordResetEmailKafkaListenerContainerFactory() {
 
-        Map<String, Object> config = new HashMap<>();
+                ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
 
-        config.put(
-                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                bootstrapServers
-        );
+                factory.setConsumerFactory(
+                                consumerFactory());
 
-        config.put(
-                ConsumerConfig.GROUP_ID_CONFIG,
-                "document-group"
-        );
+                return factory;
+        }
 
-        config.put(
-                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
-                "earliest"
-        );
+        @Bean
+        public ConcurrentKafkaListenerContainerFactory<String, Object> passwordResetSuccessEmailKafkaListenerContainerFactory() {
 
-        return new DefaultKafkaConsumerFactory<>(
-                config,
-                new StringDeserializer(),
-                deserializer
-        );
-    }
+                ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
 
-    @Bean
-    public ConcurrentKafkaListenerContainerFactory<
-            String,
-            DocumentUploadedEvent> documentKafkaListenerContainerFactory() {
+                factory.setConsumerFactory(
+                                consumerFactory());
 
-        ConcurrentKafkaListenerContainerFactory<
-                String,
-                DocumentUploadedEvent> factory =
-                new ConcurrentKafkaListenerContainerFactory<>();
-
-        factory.setConsumerFactory(
-                documentConsumerFactory()
-        );
-
-        return factory;
-    }
+                return factory;
+        }
 }
