@@ -7,7 +7,6 @@ import com.ai_powered_app.ai_team_assistant_platform.dto.request.UserRegistratio
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.TokenResfreshResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserLoginResponse;
 import com.ai_powered_app.ai_team_assistant_platform.dto.response.UserResponse;
-import com.ai_powered_app.ai_team_assistant_platform.email.interfaces.EmailService;
 import com.ai_powered_app.ai_team_assistant_platform.entity.PasswordResetToken;
 import com.ai_powered_app.ai_team_assistant_platform.entity.RefreshToken;
 import com.ai_powered_app.ai_team_assistant_platform.entity.User;
@@ -17,6 +16,9 @@ import com.ai_powered_app.ai_team_assistant_platform.exception.BadCredentialsExc
 import com.ai_powered_app.ai_team_assistant_platform.exception.DuplicateResourceException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.PasswordResetTokenException;
 import com.ai_powered_app.ai_team_assistant_platform.exception.ResourceNotFoundException;
+import com.ai_powered_app.ai_team_assistant_platform.kafka.event.PasswordResetEmailEvent;
+import com.ai_powered_app.ai_team_assistant_platform.kafka.event.PasswordResetSuccessEmailEvent;
+import com.ai_powered_app.ai_team_assistant_platform.kafka.producer.PasswordResetEmailProducer;
 import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.JwtBlacklistService;
 import com.ai_powered_app.ai_team_assistant_platform.redis.interfaces.UserRedisService;
 import com.ai_powered_app.ai_team_assistant_platform.repository.PasswordResetTokenRepository;
@@ -56,7 +58,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtBlacklistService jwtBlacklistService;
     private final PasswordResetTokenUtil passwordResetTokenUtil;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
-    private final EmailService emailService;
+    private final PasswordResetEmailProducer passwordResetEmailProducer;
 
     public AuthServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
@@ -67,7 +69,7 @@ public class AuthServiceImpl implements AuthService {
                            JwtBlacklistService jwtBlacklistService,
                            PasswordResetTokenUtil passwordResetTokenUtil,
                            PasswordResetTokenRepository passwordResetTokenRepository, 
-                           EmailService emailService) {
+                           PasswordResetEmailProducer passwordResetEmailProducer) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
@@ -77,7 +79,7 @@ public class AuthServiceImpl implements AuthService {
         this.jwtBlacklistService = jwtBlacklistService;
         this.passwordResetTokenUtil = passwordResetTokenUtil;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
-        this.emailService = emailService;
+        this.passwordResetEmailProducer = passwordResetEmailProducer;
     }
 
 
@@ -271,7 +273,12 @@ public class AuthServiceImpl implements AuthService {
         String resetUrl = "http://localhost:5173/reset-password?token=" + rawToken;
 
         log.info("Sending password reset email to user ID: {}, email: {}", user.getId(), user.getEmail());
-        emailService.sendResetPasswordEmail(user.getEmail(), resetUrl, user.getName());
+        PasswordResetEmailEvent event = new PasswordResetEmailEvent();
+        event.setUserId(user.getId());
+        event.setEmail(user.getEmail());
+        event.setUserName(user.getName());
+        event.setResetLink(resetUrl);
+        passwordResetEmailProducer.publishPasswordResetEmailEvent(event);
     }
 
     @Override
@@ -297,7 +304,11 @@ public class AuthServiceImpl implements AuthService {
         passwordResetToken.setIsUsed(true);
         passwordResetTokenRepository.save(passwordResetToken);
 
-        emailService.sendResetPasswordConfirmationEmail(user.getEmail(), user.getName());
+        PasswordResetSuccessEmailEvent event = new PasswordResetSuccessEmailEvent();
+        event.setUserId(user.getId());
+        event.setEmail(user.getEmail());
+        event.setUserName(user.getName());
+        passwordResetEmailProducer.publishPasswordResetSuccessEmailEvent(event);
     }
 
     private static UserResponse getUserResponse(User savedUser) {
