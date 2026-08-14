@@ -20,7 +20,7 @@ public class DocumentProcessingConsumer {
     @KafkaListener(
             topics = KafkaTopics.DOCUMENT_UPLOADED,
             groupId = "document-group",
-            containerFactory = "documentKafkaListenerContainerFactory"
+            containerFactory = "concurrentKafkaListenerContainerFactory"
     )
     public void consumeDocumentUploadedEvent(
             DocumentUploadedEvent event

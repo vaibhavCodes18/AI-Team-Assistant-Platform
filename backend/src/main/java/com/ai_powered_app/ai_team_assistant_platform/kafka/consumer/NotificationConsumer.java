@@ -26,7 +26,7 @@ public class NotificationConsumer {
     @KafkaListener(
             topics = KafkaTopics.TICKET_CREATED,
             groupId = "ticket-group",
-            containerFactory = "ticketKafkaListenerContainerFactory"
+            containerFactory = "concurrentKafkaListenerContainerFactory"
     )
     public void consumeTicketCreatedEvent(
             TicketCreatedEvent event

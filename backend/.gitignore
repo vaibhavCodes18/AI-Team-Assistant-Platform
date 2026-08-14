@@ -13,6 +13,8 @@ build/
 logs/
 *.log
 
+certs/
+
 ### ===== Sensitive Spring Profiles (contain credentials) ===== ###
 src/main/resources/application-dev.yaml
 
