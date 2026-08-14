@@ -23,7 +23,7 @@ public class PasswordResetEmailConsumer {
     @KafkaListener(
             topics = KafkaTopics.PASSWORD_RESET_EMAIL,
             groupId = "password-reset-email-group",
-            containerFactory = "passwordResetEmailKafkaListenerContainerFactory"
+            containerFactory = "concurrentKafkaListenerContainerFactory"
     )
     public void consumePasswordResetEmailEvent(
             PasswordResetEmailEvent event
@@ -49,7 +49,7 @@ public class PasswordResetEmailConsumer {
     @KafkaListener(
             topics = KafkaTopics.PASSWORD_RESET_SUCCESS_EMAIL,
             groupId = "password-reset-success-email-group",
-            containerFactory = "passwordResetSuccessEmailKafkaListenerContainerFactory"
+            containerFactory = "concurrentKafkaListenerContainerFactory"
     )
     public void consumePasswordResetSuccessEmailEvent(
             PasswordResetSuccessEmailEvent event

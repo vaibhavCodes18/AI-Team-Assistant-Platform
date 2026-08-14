@@ -1,125 +1,154 @@
 package com.ai_powered_app.ai_team_assistant_platform.kafka.config;
 
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
-import java.util.HashMap;
+import com.ai_powered_app.ai_team_assistant_platform.kafka.topic.KafkaTopics;
+
 import java.util.Map;
 
 @EnableKafka
 @Configuration
 public class KafkaConfig {
 
-        @Value("${spring.kafka.bootstrap-servers}")
-        private String bootstrapServers;
+    private final KafkaProperties kafkaProperties;
 
-        // =========================
-        // Producer Configuration
-        // =========================
+    public KafkaConfig(KafkaProperties kafkaProperties) {
+        this.kafkaProperties = kafkaProperties;
+    }
 
-        @Bean
-        public ProducerFactory<String, Object> producerFactory() {
+    // =========================================================
+    // Kafka Admin
+    // =========================================================
 
-                Map<String, Object> config = new HashMap<>();
+    @Bean
+    public KafkaAdmin kafkaAdmin() {
+        return new KafkaAdmin(
+                kafkaProperties.buildAdminProperties(null)
+        );
+    }
 
-                config.put(
-                                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                                bootstrapServers);
+    // =========================================================
+    // Topics
+    // =========================================================
 
-                config.put(
-                                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-                                StringSerializer.class);
+    @Bean
+    public NewTopic ticketCreatedTopic() {
+        return TopicBuilder
+                .name(KafkaTopics.TICKET_CREATED)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
 
-                config.put(
-                                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-                                JsonSerializer.class);
+    @Bean
+    public NewTopic documentUploadedTopic() {
+        return TopicBuilder
+                .name(KafkaTopics.DOCUMENT_UPLOADED)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
 
-                return new DefaultKafkaProducerFactory<>(config);
-        }
+    @Bean
+    public NewTopic passwordResetEmailTopic() {
+        return TopicBuilder
+                .name(KafkaTopics.PASSWORD_RESET_EMAIL)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
 
-        @Bean
-        public KafkaTemplate<String, Object> kafkaTemplate() {
-                return new KafkaTemplate<>(producerFactory());
-        }
+    @Bean
+    public NewTopic passwordResetSuccessEmailTopic() {
+        return TopicBuilder
+                .name(KafkaTopics.PASSWORD_RESET_SUCCESS_EMAIL)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
 
-        // =========================
-        // Generic Consumer
-        // =========================
+    // =========================================================
+    // Producer
+    // =========================================================
 
-        @Bean
-        public ConsumerFactory<String, Object> consumerFactory() {
+    @Bean
+    public ProducerFactory<String, Object> producerFactory() {
 
-                JsonDeserializer<Object> deserializer = new JsonDeserializer<>();
+        Map<String, Object> config =
+                kafkaProperties.buildProducerProperties(null);
 
-                deserializer.addTrustedPackages("com.ai_powered_app.ai_team_assistant_platform.kafka.event");
+        config.put(
+                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                StringSerializer.class
+        );
 
-                Map<String, Object> config = new HashMap<>();
+        config.put(
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                JsonSerializer.class
+        );
 
-                config.put(
-                                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                                bootstrapServers);
+        return new DefaultKafkaProducerFactory<>(config);
+    }
 
-                config.put(
-                                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
-                                "earliest");
+    @Bean
+    public KafkaTemplate<String, Object> kafkaTemplate() {
+        return new KafkaTemplate<>(producerFactory());
+    }
 
-                return new DefaultKafkaConsumerFactory<>(
-                                config,
-                                new StringDeserializer(),
-                                deserializer);
-        }
+    // =========================================================
+    // Consumer
+    // =========================================================
 
-        @Bean
-        public ConcurrentKafkaListenerContainerFactory<String, Object> ticketKafkaListenerContainerFactory() {
+    @Bean
+    public ConsumerFactory<String, Object> consumerFactory() {
 
-                ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        Map<String, Object> config =
+                kafkaProperties.buildConsumerProperties(null);
 
-                factory.setConsumerFactory(
-                                consumerFactory());
+        config.put(
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class
+        );
 
-                return factory;
-        }
+        config.put(
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                JsonDeserializer.class
+        );
 
-        @Bean
-        public ConcurrentKafkaListenerContainerFactory<String, Object> documentKafkaListenerContainerFactory() {
+        config.put(
+                JsonDeserializer.TRUSTED_PACKAGES,
+                "com.ai_powered_app.ai_team_assistant_platform.kafka.event"
+        );
 
-                ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        return new DefaultKafkaConsumerFactory<>(config);
+    }
 
-                factory.setConsumerFactory(
-                                consumerFactory());
+    // =========================================================
+    // Listener Factory
+    // =========================================================
 
-                return factory;
-        }
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, Object>
+    concurrentKafkaListenerContainerFactory() {
 
-        @Bean
-        public ConcurrentKafkaListenerContainerFactory<String, Object> passwordResetEmailKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, Object> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
 
-                ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory());
 
-                factory.setConsumerFactory(
-                                consumerFactory());
-
-                return factory;
-        }
-
-        @Bean
-        public ConcurrentKafkaListenerContainerFactory<String, Object> passwordResetSuccessEmailKafkaListenerContainerFactory() {
-
-                ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
-
-                factory.setConsumerFactory(
-                                consumerFactory());
-
-                return factory;
-        }
+        return factory;
+    }
 }
