@@ -1,7 +1,7 @@
 server:
-  port: ${SERVER_PORT}
+  port: ${SERVER_PORT:1818}
 
-debug: true
+debug: false
 
 spring:
 
@@ -25,8 +25,8 @@ spring:
         registration:
 
           google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
+            client-id: ${GOOGLE_CLIENT_ID:dummy-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:dummy-secret}
             scope:
               - email
               - profile
@@ -34,7 +34,7 @@ spring:
   ai:
     google:
       genai:
-        api-key: ${GEMINI_API_KEY}
+        api-key: ${GEMINI_API_KEY:dummy-key}
         chat:
           options:
             model: gemini-2.5-flash
@@ -51,7 +51,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -61,7 +61,7 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_URL}
+      url: ${REDIS_URL}
       timeout: 6000ms
 
   kafka:
@@ -74,7 +74,7 @@ spring:
       ssl:
         truststore:
           type: PEM
-          location: ${KAFKA_TRUSTSTORE_LOCATION}
+          location: ${KAFKA_TRUSTSTORE_LOCATION:/app/certs/ca.pem}
 
     consumer:
       group-id: ai-team-assistant-group
@@ -92,21 +92,14 @@ spring:
     listener:
       ack-mode: record
 
-
-
 logging:
   level:
-    org.springframework.beans.factory: TRACE
-    org.springframework.kafka: DEBUG
-
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration
-
-
+    root: INFO
+    com.ai_powered_app.ai_team_assistant_platform: INFO
+    org.springframework.kafka: WARN
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:gSlCSPmsLDvZVGRo6N1kG8ondsgSlCSPmsLDvZVGRo6N1kG8onds}
 
 app:
   cors:
@@ -117,4 +110,5 @@ app:
     secure: false
     same-site: Lax
   storage:
-    document-path: ${STORAGE_PATH}
+    document-path: ${STORAGE_PATH:/app/storage/documents}
+
