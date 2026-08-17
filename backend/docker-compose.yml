@@ -9,25 +9,7 @@ services:
       - "8080:1818"
     env_file:
       - .env
-    environment:
-      # Maps Docker environment variables to Spring Boot properties dynamically
-      - MAIL_USERNAME=${MAIL_USERNAME}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - DB_URL=${DB_URL}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - REDIS_URL=${REDIS_URL}
-      - SERVER_PORT=${SERVER_PORT}
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
-      - KAFKA_USERNAME=${KAFKA_USERNAME}
-      - KAFKA_PASSWORD=${KAFKA_PASSWORD}
-      - KAFKA_TRUSTSTORE_LOCATION=${KAFKA_TRUSTSTORE_LOCATION}
-      - JWT_SECRET=${JWT_SECRET}
-      - STORAGE_PATH=${STORAGE_PATH}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+    
     volumes:
       # Mounts your Kafka ca.pem file into the container
       # Left side: Path on your host machine (EC2 or Local)
@@ -37,9 +19,6 @@ services:
       # Mounts a persistent volume for document storage so files survive restarts
       - teampilot-documents:/app/storage/documents
     restart: always
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
     logging:
       driver: "json-file"
       options:
