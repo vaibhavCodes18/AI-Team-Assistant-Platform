@@ -38,6 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
+            
             try {
                 if (jwtBlacklistService.blackListTokenExist(token, "access")) {
                     throw new BadCredentialsException("Unauthorized user");
@@ -54,9 +55,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     }
                 }
             } catch (Exception e) {
-                log.debug("JWT authentication failed: {}", e.getMessage());
+                log.warn("JWT authentication failed for request [{}]: {}", request.getRequestURI(), e.getMessage());
             }
         }
+        System.out.println("this is good");
         filterChain.doFilter(request, response);
     }
 }

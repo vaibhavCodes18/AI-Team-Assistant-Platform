@@ -20,18 +20,12 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Security: Create a non-root user and runtime directories with proper permissions
-RUN addgroup -S spring && adduser -S spring -G spring && \
-    mkdir -p /app/storage/documents /app/certs && \
-    chown -R spring:spring /app
-
-USER spring
-
 # Copy only the compiled JAR file from the builder stage
-COPY --chown=spring:spring --from=builder /app/target/*.jar app.jar
+COPY --from=builder /app/target/*.jar app.jar
+
 
 # Document that this container exposes port 1818
 EXPOSE 1818
 
 # Run the application with JVM memory limits configured for containers
-ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
