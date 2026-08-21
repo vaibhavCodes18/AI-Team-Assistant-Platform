@@ -2,7 +2,7 @@ import axios from 'axios';
 import { refreshToken } from './authApi';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: `${import.meta.env.VITE_API_URL}/api`,
   withCredentials: true,
 });
 
