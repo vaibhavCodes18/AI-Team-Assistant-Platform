@@ -53,7 +53,11 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
         // days)
         addCookie(response, "refreshToken", loginResponse.getRefreshToken(), 7 * 24 * 60 * 60, true);
 
-        response.sendRedirect(authorizedRedirectUri);
+        String targetUrl = authorizedRedirectUri.contains("?")
+                ? authorizedRedirectUri + "&access_token=" + loginResponse.getAccessToken()
+                : authorizedRedirectUri + "?access_token=" + loginResponse.getAccessToken();
+
+        response.sendRedirect(targetUrl);
     }
 
     private void addCookie(HttpServletResponse response, String name, String value, int maxAge, boolean httpOnly) {

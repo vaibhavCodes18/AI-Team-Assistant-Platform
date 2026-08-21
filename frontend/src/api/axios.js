@@ -1,8 +1,17 @@
 import axios from 'axios';
 import { refreshToken } from './authApi';
 
+const getBaseUrl = () => {
+  const envApiUrl = import.meta.env.VITE_API_URL;
+  if (envApiUrl) {
+    const cleaned = envApiUrl.replace(/\/+$/, '');
+    return cleaned.endsWith('/api') ? cleaned : `${cleaned}/api`;
+  }
+  return '/api';
+};
+
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api`,
+  baseURL: getBaseUrl(),
   withCredentials: true,
 });
 

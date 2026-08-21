@@ -257,7 +257,10 @@ const Login = () => {
               <button 
                 className="w-full h-12 bg-surface-container-high border border-outline-variant text-on-surface font-body-md font-semibold rounded-lg flex items-center justify-center gap-sm btn-hover-effect hover:bg-surface-bright transition-colors" 
                 type="button"
-                onClick={() => window.location.href = '/oauth2/authorization/google'}
+                onClick={() => {
+                  const baseUrl = import.meta.env.VITE_API_URL || '';
+                  window.location.href = `${baseUrl}/oauth2/authorization/google`;
+                }}
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
