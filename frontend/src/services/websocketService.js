@@ -3,27 +3,40 @@ import SockJS from "sockjs-client";
 
 // Dynamic socket URL resolution from environment variable or standard backend fallback
 const getSocketUrl = () => {
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl) {
-    return `${envUrl.replace(/\/$/, "")}/ws`;
+  let envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl) {
+    envUrl = "http://localhost:8080";
   }
-  return "http://localhost:1818/ws";
+
+  // If client is on HTTPS, upgrade http:// backend URL to https:// to prevent Mixed Content security blocks
+  if (typeof window !== "undefined" && window.location.protocol === "https:") {
+    if (envUrl.startsWith("http://")) {
+      envUrl = envUrl.replace("http://", "https://");
+    }
+  }
+
+  const cleanUrl = envUrl.replace(/\/+$/, "");
+  return `${cleanUrl}/ws`;
 };
 
 export const createStompClient = (topic, onMessageReceived) => {
   const socketUrl = getSocketUrl();
+  const isHttps = socketUrl.startsWith("https://");
+  const brokerUrl = isHttps 
+    ? socketUrl.replace("https://", "wss://") 
+    : socketUrl.replace("http://", "ws://");
 
   const stompClient = new Client({
+    brokerURL: brokerUrl,
     webSocketFactory: () => new SockJS(socketUrl),
 
     connectHeaders: {
-
-        Authorization:
-            `Bearer ${localStorage.getItem("accessToken")}`
-
+      Authorization: `Bearer ${localStorage.getItem("accessToken") || ""}`,
     },
 
     reconnectDelay: 5000,
+    heartbeatIncoming: 4000,
+    heartbeatOutgoing: 4000,
 
     onConnect: () => {
       console.log("✅ Connected to STOMP WebSocket broker at:", socketUrl);
@@ -44,8 +57,8 @@ export const createStompClient = (topic, onMessageReceived) => {
     },
 
     onStompError: (frame) => {
-      console.error("STOMP Broker Error:", frame.headers["message"]);
-      console.error(frame.body);
+      console.error("STOMP Broker Error:", frame.headers ? frame.headers["message"] : frame);
+      if (frame.body) console.error(frame.body);
     },
 
     onWebSocketError: (error) => {
