@@ -3,20 +3,11 @@ import SockJS from "sockjs-client";
 
 // Dynamic socket URL resolution from environment variable or standard backend fallback
 const getSocketUrl = () => {
-  let envUrl = import.meta.env.VITE_API_URL;
-  if (!envUrl) {
-    envUrl = "http://localhost:8080";
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) {
+    return `${envUrl.replace(/\/$/, "")}/ws`;
   }
-
-  // If client is on HTTPS, upgrade http:// backend URL to https:// to prevent Mixed Content security blocks
-  if (typeof window !== "undefined" && window.location.protocol === "https:") {
-    if (envUrl.startsWith("http://")) {
-      envUrl = envUrl.replace("http://", "https://");
-    }
-  }
-
-  const cleanUrl = envUrl.replace(/\/+$/, "");
-  return `${cleanUrl}/ws`;
+  return "http://localhost:8080/ws";
 };
 
 export const createStompClient = (topic, onMessageReceived) => {
