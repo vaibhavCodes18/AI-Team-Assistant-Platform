@@ -4,9 +4,25 @@ import SockJS from "sockjs-client";
 // Dynamic socket URL resolution from environment variable or standard backend fallback
 const getSocketUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
+
   if (envUrl) {
-    return `${envUrl.replace(/\/$/, "")}/ws`;
+    const cleanUrl = envUrl.replace(/\/+$/, "");
+
+    // Direct HTTP call from HTTPS page is blocked by browser Mixed Content policy.
+    // When running on HTTPS (Vercel) with an HTTP backend, route through Vercel proxy (/ws).
+    if (typeof window !== "undefined" && window.location.protocol === "https:" && cleanUrl.startsWith("http://")) {
+      console.warn("⚠️ Client is on HTTPS but VITE_API_URL is HTTP. Routing WebSocket through Vercel reverse proxy (/ws).");
+      return `${window.location.protocol}//${window.location.host}/ws`;
+    }
+
+    return `${cleanUrl}/ws`;
   }
+
+  // Relative path fallback for local dev or Vercel rewrites
+  if (typeof window !== "undefined") {
+    return `${window.location.protocol}//${window.location.host}/ws`;
+  }
+
   return "http://localhost:8080/ws";
 };
 
