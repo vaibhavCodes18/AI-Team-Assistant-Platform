@@ -27,6 +27,8 @@ const getSocketUrl = () => {
 };
 
 export const createStompClient = (topic, onMessageReceived) => {
+  console.log(getSocketUrl());
+  
   const socketUrl = getSocketUrl();
   const isHttps = socketUrl.startsWith("https://");
   const brokerUrl = isHttps 
