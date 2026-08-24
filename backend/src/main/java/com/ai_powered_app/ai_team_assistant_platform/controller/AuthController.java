@@ -91,7 +91,7 @@ public class AuthController {
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<UserResponse>> profile(){
         UserResponse userResponse = authService.getCurrentUser();
-        ApiResponse<UserResponse> res = new ApiResponse<>(200, "User successfully fetched", userResponse);
+        ApiResponse<UserResponse> res = new ApiResponse<>(200, "User was successfully fetched fr om database", userResponse);
 
         return ResponseEntity.status(HttpStatus.OK).body(res);
     }
