@@ -39,9 +39,8 @@ jobs:
           distribution: temurin
           cache: maven
       
-      - name: Build backend
-        working-directory: backend
-        run: mvn -B clean package -DskipTests
+      - name: Run tests
+        run: ./mvnw test
 
   deploy:
     needs: backend-ci
